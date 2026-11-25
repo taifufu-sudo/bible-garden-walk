@@ -121,18 +121,14 @@ export function renderTodayView(container, { showToast, openReader }) {
             const book = getBookById(ch.bookId);
             const done = store.isChapterRead(ch.bookId, ch.chapter);
             return `
-              <div class="chapter-row ${done ? 'is-done' : ''}">
-                <button class="chapter-main-btn" data-act="open-ch" data-book="${ch.bookId}" data-ch="${ch.chapter}">
-                  <span class="ch-emoji">${book.emoji}</span>
-                  <div class="ch-info">
-                    <div class="ch-name">${ch.bookName} 第 ${ch.chapter} 章</div>
-                    <div class="ch-meta">${book.place} · ${ch.verseCount} 節步數</div>
-                  </div>
-                </button>
-                <button class="ch-action-btn ${done ? 'done' : ''}" data-act="open-ch" data-book="${ch.bookId}" data-ch="${ch.chapter}">
-                  ${done ? '已讀完 ✓' : '閱讀並勾選'}
-                </button>
-              </div>
+              <button class="chapter-card-btn ${done ? 'is-done' : ''}" data-act="open-ch" data-book="${ch.bookId}" data-ch="${ch.chapter}">
+                <span class="ch-check-box ${done ? 'checked' : ''}" aria-hidden="true">${done ? '✓' : ''}</span>
+                <div class="ch-info">
+                  <div class="ch-name">${ch.bookName} ${ch.chapter} 章</div>
+                  <div class="ch-meta">${ch.verseCount} 節 · ${book.emoji} ${book.place}</div>
+                </div>
+                <span class="ch-pill-tag ${done ? 'done' : ''}">${done ? '已讀完' : '開始讀 ›'}</span>
+              </button>
             `;
           }).join('')}
         </div>
@@ -223,7 +219,7 @@ export function createBibleReader({ showToast }) {
   let observer = null;
 
   function applyFontSize(sz) {
-    bodyEl.classList.remove('font-sm', 'font-md', 'font-lg');
+    bodyEl.classList.remove('font-sm', 'font-md', 'font-lg', 'font-xl');
     bodyEl.classList.add(`font-${sz}`);
     fontBtns.forEach(b => b.classList.toggle('active', b.dataset.fontSize === sz));
   }
