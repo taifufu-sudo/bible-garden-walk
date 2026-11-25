@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>聖經大地圖・恩典花園｜一年整本讀經探險</title>
+  <meta name="description" content="結合皮可敏探索步數機制與四時段光影花園的一年讀經小遊戲，陪你走完 66 卷聖經、種下恩典花朵。">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body data-time-phase="noon">
+  <!-- Top Sticky Header HUD -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-block">
+        <div class="brand-title">
+          <span class="brand-leaf">🌿</span>
+          <h1>聖經大地圖</h1>
+          <button id="hud-time-badge" class="time-pill-badge" title="點擊前往光影花園">☀️ 中午</button>
+        </div>
+        <div class="brand-sub" id="hud-church">安平靈糧堂 · 一年讀經旅程</div>
+      </div>
+
+      <div class="hud-pills">
+        <div class="hud-pill" title="已累積讀經步數（節數）">
+          <span>🚶</span><strong id="hud-verses">0 節</strong>
+        </div>
+        <div class="hud-pill pill-fire" title="連續讀經天數">
+          <span>🔥</span><strong id="hud-streak">連續 0 天</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="year-progress-bar">
+      <div class="year-track">
+        <div class="year-fill" id="year-bar-fill" style="width: 1%;"></div>
+      </div>
+      <span class="year-pct" id="year-bar-label">0%</span>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main id="app-main" class="app-main" aria-live="polite"></main>
+
+  <!-- Fixed Floating Bottom Navigation (High z-index, zero overlap!) -->
+  <nav class="bottom-nav" aria-label="主要分頁">
+    <button class="nav-btn active" data-tab="today">
+      <span class="nav-ico">☀️</span>
+      <span class="nav-lbl">今日</span>
+    </button>
+    <button class="nav-btn" data-tab="map">
+      <span class="nav-ico">🗺️</span>
+      <span class="nav-lbl">地圖</span>
+    </button>
+    <button class="nav-btn" data-tab="garden">
+      <span class="nav-ico">🏡</span>
+      <span class="nav-lbl">花園</span>
+      <span class="nav-badge" id="nav-garden-badge" hidden>1</span>
+    </button>
+    <button class="nav-btn" data-tab="journal">
+      <span class="nav-ico">💌</span>
+      <span class="nav-lbl">日記</span>
+    </button>
+    <button class="nav-btn" data-tab="me">
+      <span class="nav-ico">⭐</span>
+      <span class="nav-lbl">我的</span>
+    </button>
+  </nav>
+
+  <!-- Onboarding Overlay (Properly toggles aria-hidden!) -->
+  <div id="onboard-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboard-heading" aria-hidden="true">
+    <div class="modal-card onboard-card">
+      <div class="onboard-hero-preview">
+        <img src="assets/garden/garden_morning.jpg" alt="晨光恩典花園預覽">
+        <div class="onboard-hero-chip">🌅 早晨 · ☀️ 中午 · 🌇 黃昏 · 🌙 夜晚</div>
+      </div>
+      <div class="onboard-content">
+        <h2 id="onboard-heading">🌱 開始你的一年讀經探險</h2>
+        <p class="muted-sm">
+          每天讀 3 章聖經，就像皮可敏散步一樣累積步數、沿途種花、驅散 66 卷地圖迷霧，並用解鎖的夥伴與擺飾自由佈置會隨日夜變換光影的恩典花園！
+        </p>
+
+        <div class="onboard-form">
+          <div class="form-field">
+            <label for="onboard-date">📅 預計開始日期</label>
+            <input type="date" id="onboard-date">
+          </div>
+          <div class="onboard-two-col">
+            <div class="form-field">
+              <label for="onboard-name">旅人暱稱（選填）</label>
+              <input type="text" id="onboard-name" maxlength="20" placeholder="例如：銘福">
+            </div>
+            <div class="form-field">
+              <label for="onboard-church">教會名稱</label>
+              <input type="text" id="onboard-church" maxlength="24" value="安平靈糧堂">
+            </div>
+          </div>
+        </div>
+
+        <div class="onboard-actions">
+          <button id="onboard-start-btn" class="btn-primary-full">🚀 從今天開始讀經</button>
+          <button id="onboard-demo-btn" class="btn-soft-full">✨ 先體驗「第 100 天」完整光影花園</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full-Screen Anti-Skim Bible Reader Overlay -->
+  <div id="reader-modal" class="modal-backdrop reader-backdrop" role="dialog" aria-modal="true" aria-labelledby="reader-title" aria-hidden="true">
+    <div class="reader-sheet">
+      <div class="reader-header">
+        <button id="reader-close-btn" class="icon-circle-btn" aria-label="關閉閱讀器">◀</button>
+        <div class="reader-head-text">
+          <h2 id="reader-title">創世記 第 1 章</h2>
+          <div id="reader-sub" class="reader-sub">伊甸園 · 共 31 節</div>
+        </div>
+        <div class="reader-font-controls" role="group" aria-label="字體大小">
+          <button data-font-size="sm">小</button>
+          <button data-font-size="md" class="active">中</button>
+          <button data-font-size="lg">大</button>
+        </div>
+      </div>
+
+      <div id="reader-body" class="reader-body font-md"></div>
+
+      <div class="reader-footer">
+        <button id="reader-mark-btn" class="btn-primary-full" disabled>請向下滑動讀到最後一節 ↓</button>
+        <button id="reader-uncheck-btn" class="link-btn" hidden>取消勾選</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
