@@ -1,7 +1,7 @@
 // Cloud API Client for 聖經大地圖・牧區多人線上版 (Cloudflare Workers + D1)
 
 // Live Cloudflare Workers API endpoint (updated automatically after Worker deployment)
-export const API_BASE_URL = window.__BIBLE_API_URL__ || 'https://bible-garden-api.taifufu.workers.dev';
+export const API_BASE_URL = window.__BIBLE_API_URL__ || 'https://bible-garden-api.bible-garden-walk.workers.dev';
 
 const TOKEN_KEY = 'bible_zone_token_v2';
 
