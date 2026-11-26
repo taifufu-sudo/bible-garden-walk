@@ -505,24 +505,23 @@ export function renderGardenView(container, { showToast }) {
     });
   });
 
-  const openStudio = ({ screensaver = false, autoLandscapeOnPortrait = false, openDrawer = false } = {}) => {
+  const openStudio = ({ screensaver = false, openDrawer = false } = {}) => {
     studioOpen = true;
     studioScreensaver = screensaver;
     studioDrawerOpen = openDrawer;
-    // Automatically enable crisp landscape rotation on narrow portrait phones for maximum space!
-    const isPortraitMobile = window.innerWidth <= 560 && window.innerHeight > window.innerWidth;
-    studioRotateLandscape = autoLandscapeOnPortrait && isPortraitMobile;
+    // Always open upright first so first-time users & LINE in-app browser NEVER get disoriented or trapped!
+    studioRotateLandscape = false;
     studioZoom = 1.0;
     document.body.classList.add('studio-lock-scroll');
     renderStudioOverlay({ showToast, rerenderParent: () => renderGardenView(container, { showToast }) });
   };
 
   container.querySelectorAll('[data-act="open-studio-edit"]').forEach(el => {
-    el.addEventListener('click', () => openStudio({ screensaver: false, autoLandscapeOnPortrait: true, openDrawer: false }));
+    el.addEventListener('click', () => openStudio({ screensaver: false, openDrawer: false }));
   });
 
   container.querySelector('[data-act="open-studio-screensaver"]')?.addEventListener('click', () => {
-    openStudio({ screensaver: true, autoLandscapeOnPortrait: true, openDrawer: false });
+    openStudio({ screensaver: true, openDrawer: false });
     showToast('🖼️ 已進入純淨欣賞模式，點一下畫面即可顯示控制列');
   });
 
@@ -588,17 +587,26 @@ function renderStudioOverlay({ showToast, rerenderParent }) {
     placedCountByItem.set(g.itemId, (placedCountByItem.get(g.itemId) || 0) + 1);
   }
 
-  const isPortraitScreen = window.innerHeight > window.innerWidth;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const isPortraitScreen = vh > vw;
   const useRotated90 = studioRotateLandscape && isPortraitScreen;
 
-  modal.className = `studio-backdrop show ${useRotated90 ? 'is-rotated-90' : ''} ${studioScreensaver ? 'is-screensaver' : ''} phase-${phase.id}`;
+  // Exact pixel-centered 90deg box (immune to iOS LINE WebView 100dvh/translate bugs!)
+  const surfaceStyle = useRotated90
+    ? `width:${vh}px; height:${vw}px; left:${((vw - vh) / 2).toFixed(1)}px; top:${((vh - vw) / 2).toFixed(1)}px; transform:rotate(90deg);`
+    : `width:${vw}px; height:${vh}px; left:0; top:0; transform:none;`;
+
+  const stageW = useRotated90 ? Math.min(vh, vw * (21 / 9)) : Math.min(vw, vh * (21 / 9));
+
+  modal.className = `studio-backdrop show ${useRotated90 ? 'is-rotated-90' : ''} ${isPortraitScreen && !useRotated90 ? 'is-portrait-upright' : ''} ${studioScreensaver ? 'is-screensaver' : ''} phase-${phase.id}`;
   modal.setAttribute('aria-hidden', 'false');
 
   modal.innerHTML = `
-    <!-- Soft blurred ambient fill behind the 1:1 garden canvas so landscape screens have zero harsh black bars -->
+    <!-- Soft blurred ambient fill behind the 21:9 garden canvas -->
     <div class="studio-ambient-blur" style="background-image:url('${phase.backdrop}')" aria-hidden="true"></div>
 
-    <div class="studio-surface">
+    <div class="studio-surface" style="${surfaceStyle}">
       <!-- Top Floating Compact Single-Row Control Bar (Hidden in pure Screensaver mode) -->
       <header class="studio-topbar">
         <div class="studio-top-left">
@@ -625,7 +633,8 @@ function renderStudioOverlay({ showToast, rerenderParent }) {
       <!-- Main Full-Screen Canvas Viewport -->
       <div class="studio-canvas-viewport ${studioFillCover && studioScreensaver ? 'fill-cover' : ''}">
         <div class="studio-zoom-wrap" style="transform:scale(${studioZoom});">
-          <div class="garden-stage garden-stage-studio phase-${phase.id}" id="garden-stage-studio">
+          <div class="garden-stage garden-stage-studio phase-${phase.id}" id="garden-stage-studio"
+               style="${studioFillCover && studioScreensaver ? '' : `width:${Math.round(stageW)}px;`}">
             ${buildGardenStageInnerHtml({
               phase,
               items: state.gardenItems,
@@ -634,6 +643,11 @@ function renderStudioOverlay({ showToast, rerenderParent }) {
             })}
           </div>
         </div>
+        ${isPortraitScreen && !useRotated90 && !studioScreensaver && !studioDrawerOpen ? `
+          <div class="portrait-rotate-tip">
+            <span>📱 將手機橫放，或點上方「🔄 橫幅」畫面更大更好擺放！</span>
+          </div>
+        ` : ''}
       </div>
 
       <!-- Subtle Floating Ambient Clock & Verse Overlay in Open Upper-Right Sky (Pure Screensaver Mode) -->
