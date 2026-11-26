@@ -1506,13 +1506,13 @@ body[data-time-phase="night"] .year-pct { color: #c7d6f0; }
   left: 50%;
   bottom: 92px;
   transform: translate(-50%, 16px);
-  z-index: 600;
+  z-index: 950;
   max-width: min(460px, calc(100% - 32px));
   background: rgba(27, 40, 34, 0.92);
   color: #ffffff;
   padding: 10px 18px;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
   text-align: center;
   opacity: 0;
@@ -1589,4 +1589,430 @@ body[data-time-phase="night"] .year-pct { color: #c7d6f0; }
   .time-switcher { gap: 4px; }
   .time-btn { font-size: 0.82rem; padding: 8px 2px; }
   .onboard-two-col { grid-template-columns: 1fr; }
+}
+
+
+/* ==========================================================================
+   THUMBNAIL PREVIEW, FULL-SCREEN LANDSCAPE STUDIO, SCREENSAVER & ANIMAL GAITS
+   ========================================================================== */
+
+body.studio-lock-scroll {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Compact Living Thumbnail Shell on Garden Tab */
+.garden-thumb-shell {
+  position: relative;
+  cursor: pointer;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.garden-thumb-shell:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(40, 75, 52, 0.16);
+}
+
+.garden-stage-preview {
+  max-height: 360px;
+  aspect-ratio: 4 / 3;
+}
+@media (min-width: 640px) {
+  .garden-stage-preview {
+    max-height: 460px;
+    aspect-ratio: 1 / 1;
+  }
+}
+
+.thumb-hover-cta {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 120;
+  background: rgba(26, 46, 36, 0.74);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff;
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.studio-launch-row {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+@media (min-width: 600px) {
+  .studio-launch-row {
+    grid-template-columns: 1.35fr 1fr;
+  }
+}
+
+/* ========== Full-Screen Landscape Studio & Screensaver Overlay ========== */
+.studio-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 700;
+  display: none;
+  background: #141c2c;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.studio-backdrop.show {
+  display: block;
+}
+
+.studio-ambient-blur {
+  position: absolute;
+  inset: -12%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) saturate(1.1) brightness(0.76);
+  transform: scale(1.12);
+  transition: background-image 0.9s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.studio-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Forced 90-degree Clockwise Landscape Rotation on Portrait Mobile Phones! */
+.studio-backdrop.is-rotated-90 .studio-surface {
+  width: 100dvh;
+  height: 100vw;
+  left: 50%;
+  top: 50%;
+  inset: auto;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
+}
+
+/* Floating Translucent Top Studio Bar */
+.studio-topbar {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.studio-backdrop.is-screensaver .studio-topbar {
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+}
+
+.studio-top-left,
+.studio-top-right,
+.studio-time-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+  flex-wrap: wrap;
+}
+
+.studio-pill-btn {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(24, 38, 32, 0.68);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+  transition: background 0.16s, transform 0.14s;
+}
+.studio-pill-btn:hover { background: rgba(34, 54, 44, 0.84); }
+.studio-pill-btn.primary-exit {
+  background: rgba(255, 255, 255, 0.92);
+  color: #24382c;
+}
+.studio-pill-btn.is-on {
+  background: #4fa866;
+  border-color: #7ee098;
+}
+
+.studio-time-pills {
+  background: rgba(24, 38, 32, 0.66);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 3px;
+}
+.st-time-btn {
+  border: none;
+  background: transparent;
+  color: #eef5f0;
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 5px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.st-time-btn small { font-size: 0.72rem; }
+.st-time-btn.active {
+  background: #ffffff;
+  color: #253b2e;
+}
+
+/* Main Full-Screen Stage Container */
+.studio-canvas-viewport {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+}
+
+.studio-zoom-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.28s ease;
+}
+
+/* Keep exact 1:1 coordinate ratio so every item stays at the exact spot across preview & full-screen! */
+.garden-stage-studio {
+  width: min(100%, 100dvh);
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+}
+
+.studio-backdrop.is-rotated-90 .garden-stage-studio {
+  width: min(100dvh, 100vw);
+  height: min(100dvh, 100vw);
+  max-height: none;
+  border-radius: 12px;
+}
+
+/* Optional edge-to-edge full-cover zoom inside Pure Screensaver Mode */
+.studio-canvas-viewport.fill-cover .garden-stage-studio {
+  width: max(100%, 100dvh);
+  height: max(100%, 100dvh);
+  max-height: none;
+  border-radius: 0;
+}
+.studio-backdrop.is-rotated-90 .studio-canvas-viewport.fill-cover .garden-stage-studio {
+  width: max(100dvh, 100vw);
+  height: max(100dvh, 100vw);
+}
+
+/* Pure Screensaver Ambient Clock & Verse HUD */
+.screensaver-hud {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 45;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  pointer-events: none;
+}
+
+.ss-clock-card {
+  background: rgba(20, 30, 36, 0.50);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 18px;
+  padding: 10px 16px;
+  color: #ffffff;
+  max-width: min(440px, 72%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+.ss-time-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+#screensaver-clock-time {
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+.ss-phase-tag {
+  font-size: 0.86rem;
+  font-weight: 700;
+  opacity: 0.92;
+}
+.ss-verse {
+  margin-top: 4px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  opacity: 0.92;
+  line-height: 1.45;
+}
+
+.ss-micro-actions {
+  display: inline-flex;
+  gap: 6px;
+  pointer-events: auto;
+  flex-wrap: wrap;
+}
+.ss-chip-btn {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(20, 30, 36, 0.56);
+  backdrop-filter: blur(10px);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.ss-chip-btn:hover { background: rgba(30, 46, 54, 0.8); }
+
+/* Bottom Collapsible Drawer in Studio Edit Mode */
+.studio-bottom-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.studio-dock-handle-row {
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  pointer-events: auto;
+}
+.studio-bottom-dock.is-open .studio-dock-handle-row {
+  padding-bottom: 6px;
+}
+
+.studio-drawer-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.94);
+  color: #243e2d;
+  font-size: 0.9rem;
+  font-weight: 900;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
+}
+
+.studio-drawer-body {
+  width: 100%;
+  background: rgba(252, 254, 252, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(110, 150, 125, 0.28);
+  border-radius: 22px 22px 0 0;
+  padding: 10px 14px max(12px, env(safe-area-inset-bottom));
+  pointer-events: auto;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.studio-filter-pills {
+  margin-bottom: 8px;
+  justify-content: center;
+}
+
+.studio-tray-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tray-item-card.is-compact {
+  flex: 0 0 96px;
+  padding: 7px 6px;
+  border-radius: 14px;
+}
+.tray-item-card.is-compact .tray-thumb-wrap {
+  height: 54px;
+  margin-bottom: 4px;
+}
+.tray-item-card.is-compact .tray-thumb-wrap img {
+  max-width: 56px;
+  max-height: 52px;
+}
+.tray-item-card.is-compact .tray-item-name {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========== Living Animal Stroll / Hop / Flutter Gaits ========== */
+.placed-item.gait-stroll .placed-sprite {
+  animation: animalStrollBob 0.58s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.placed-item.gait-hop .placed-sprite {
+  animation: bunnyHopBob 0.46s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.placed-item.gait-flutter .placed-sprite {
+  animation: doveFlutterBob 0.52s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+@keyframes animalStrollBob {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  25% { translate: 0 -4px; rotate: -1.8deg; }
+  75% { translate: 0 -3px; rotate: 1.8deg; }
+}
+
+@keyframes bunnyHopBob {
+  0%, 100% { translate: 0 0; }
+  45% { translate: 0 -10px; }
+}
+
+@keyframes doveFlutterBob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -7px; }
 }
