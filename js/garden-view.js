@@ -37,7 +37,7 @@ window.addEventListener('resize', () => {
 
 function computeDepthScale(yPct) {
   const norm = Math.max(0, Math.min(1, (yPct - 36) / 58));
-  return 0.56 + norm * 0.56;
+  return 0.56 + norm * 0.52;
 }
 
 const FIREFLIES = [
@@ -73,6 +73,14 @@ function buildGardenStageInnerHtml({ phase, items, interactive, showEmptyHint })
     <img class="garden-bg ${phase.id === 'night' ? 'active' : ''}"   src="assets/garden/garden_night.jpg"   alt="夜晚粉彩花園" draggable="false">
 
     <div class="garden-atmosphere" aria-hidden="true">
+      <!-- Subtle living water shimmer & gentle ripples over the lower-left lotus pond -->
+      <div class="pond-water-shimmer">
+        <span class="water-ripple r1"></span>
+        <span class="water-ripple r2"></span>
+        <span class="water-glint g1"></span>
+        <span class="water-glint g2"></span>
+        <span class="water-glint g3"></span>
+      </div>
       ${phase.id === 'morning' ? `<div class="morning-rays"></div>` : ''}
       ${phase.id === 'dusk' ? `<div class="dusk-glow"></div>` : ''}
       ${phase.id === 'night' ? `
