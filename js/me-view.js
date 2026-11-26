@@ -1,11 +1,17 @@
-// Profile, Progress Dashboard, Streak Badges, Companion Catalog & Demo/Reset Tools
+// Profile, Cloud Account Card, Zone Leader Admin Entry, Stats, Streak Badges, Personal Journal & Catalog
 import { GARDEN_ITEMS } from './garden-catalog.js';
+import { api } from './api.js';
+import { openAdminDashboard } from './admin-view.js';
 import { store, todayISO } from './state.js';
 
 export function renderMeView(container, { showToast }) {
   const state = store.state;
   const stats = store.getStats();
   const canGrace = store.canUseGraceCard(todayISO());
+  const user = store.cloudUser;
+  const isLoggedIn = store.isCloudLoggedIn();
+  const isAdmin = user?.role === 'admin';
+  const groups = store.cloudGroups || [];
 
   const badges = [
     { days: 7,   icon: '🌱', title: '初熟嫩芽', desc: '連續讀經 7 天' },
@@ -16,6 +22,42 @@ export function renderMeView(container, { showToast }) {
 
   container.innerHTML = `
     <div class="me-wrap">
+      <!-- Zone Leader Admin Banner (Visible ONLY when role === 'admin') -->
+      ${isAdmin ? `
+        <section class="card admin-entry-card">
+          <div class="card-head-row" style="margin-bottom:8px;">
+            <div>
+              <h3>👑 區長管理後台</h3>
+              <p class="muted-sm">查看 7+ 個小組讀經率、牧養關心名單、新增／改名小組與匯出報表</p>
+            </div>
+          </div>
+          <button class="btn-primary-full" data-act="open-admin">📊 開啟區長管理後台</button>
+        </section>
+      ` : ''}
+
+      <!-- Cloud Account Status Card -->
+      <section class="card account-banner-card">
+        ${isLoggedIn ? `
+          <div class="card-head-row">
+            <div>
+              <h3>☁️ 牧區雲端帳號（已同步）</h3>
+              <p class="muted-sm">
+                <strong>${user.nickname}</strong> · <span class="pill-tag pill-mint">${user.groupName}小組</span> · 手機 ${user.phoneMasked}
+              </p>
+            </div>
+            <button class="btn-soft-sm" data-act="logout-cloud">登出</button>
+          </div>
+        ` : `
+          <div class="card-head-row">
+            <div>
+              <h3>📱 尚未登入牧區雲端帳號</h3>
+              <p class="muted-sm">使用手機號碼＋生日四碼登入，即可跨手機同步進度、逛小組花園與互相澆水！</p>
+            </div>
+          </div>
+          <button class="btn-primary-full" data-act="open-auth">🚀 立即登入／註冊牧區帳號</button>
+        `}
+      </section>
+
       <!-- Profile & Settings -->
       <section class="card profile-card">
         <div class="card-head-row">
@@ -25,19 +67,23 @@ export function renderMeView(container, { showToast }) {
 
         <div class="profile-grid">
           <div class="form-field">
-            <label for="me-nickname">旅人暱稱</label>
+            <label for="me-nickname">姓名／暱稱</label>
             <input id="me-nickname" type="text" maxlength="20" value="${state.nickname}" placeholder="例如：銘福">
           </div>
-          <div class="form-field">
-            <label for="me-church">教會／小組名稱</label>
-            <input id="me-church" type="text" maxlength="24" value="${state.churchName}" placeholder="安平靈糧堂">
-          </div>
+          ${isLoggedIn && groups.length > 0 ? `
+            <div class="form-field">
+              <label for="me-group">所屬小組</label>
+              <select id="me-group" class="styled-select">
+                ${groups.map(g => `<option value="${g.id}" ${g.id === user.groupId ? 'selected' : ''}>${g.name}小組</option>`).join('')}
+              </select>
+            </div>
+          ` : ''}
           <div class="form-field">
             <label for="me-start">一年讀經起始日</label>
             <input id="me-start" type="date" value="${state.startDate}">
           </div>
         </div>
-        <button class="btn-soft-sm" data-act="save-profile">儲存設定</button>
+        <button class="btn-soft-sm" data-act="save-profile">💾 儲存設定</button>
       </section>
 
       <!-- 4 Key Stats Cards -->
@@ -55,8 +101,8 @@ export function renderMeView(container, { showToast }) {
           <div class="stat-label">📚 已完讀書卷</div>
         </div>
         <div class="stat-tile">
-          <div class="stat-num">${stats.chaptersRead} / 1189</div>
-          <div class="stat-label">🗺️ 已驅散迷霧章節</div>
+          <div class="stat-num">${stats.waterEnergy}</div>
+          <div class="stat-label">💧 小組澆水祝福能量</div>
         </div>
       </section>
 
@@ -85,6 +131,29 @@ export function renderMeView(container, { showToast }) {
         </div>
       </section>
 
+      <!-- Personal Devotional Archive -->
+      <section class="card">
+        <div class="card-head-row">
+          <h3>📒 我的靈修日記本</h3>
+          <span class="pill-tag pill-mint">共 ${state.journal.length} 篇</span>
+        </div>
+        ${state.journal.length === 0 ? `
+          <div class="empty-hint">還沒有日記喔！可以到「🤝 小組 → 💌 感動牆」寫下今天的亮光並選擇是否分享給小組！</div>
+        ` : `
+          <div class="journal-entries">
+            ${state.journal.slice(0, 10).map(entry => `
+              <article class="journal-entry">
+                <div class="entry-head">
+                  <span class="entry-date">${entry.mood || '✨'} ${entry.date} ${entry.isShared ? '· 已分享至小組' : '· 私人日記'}</span>
+                </div>
+                ${entry.verse ? `<div class="entry-verse">📖 ${entry.verse}</div>` : ''}
+                <p class="entry-note">${entry.note.replace(/\n/g, '<br>')}</p>
+              </article>
+            `).join('')}
+          </div>
+        `}
+      </section>
+
       <!-- Companion & Garden Item Encyclopedia -->
       <section class="card catalog-card">
         <div class="card-head-row">
@@ -108,37 +177,67 @@ export function renderMeView(container, { showToast }) {
         </div>
       </section>
 
-      <!-- About & Demo / Test Tools -->
+      <!-- Zone Leader Activation & Test Tools -->
       <section class="card demo-card">
-        <h3>🧪 活動示範與測試工具</h3>
-        <p class="muted-sm">
-          本原型為教會推動「一年整本聖經閱讀」所設計，結合皮可敏式步數探索地圖、花苗孵化、以及隨現實時間自動變換四時段光影（早晨／中午／黃昏／夜晚）的自由擺放花園。所有進度均儲存在本機瀏覽器。
-        </p>
+        <h3>⚙️ 系統與區長設定</h3>
         <div class="demo-btn-row">
-          <button class="btn-primary-sm" data-act="load-demo">✨ 一鍵體驗第 100 天進度（解鎖全花園）</button>
-          <button class="btn-danger-sm" data-act="reset-all">🗑️ 重設全部進度</button>
+          ${isLoggedIn && !isAdmin ? `<button class="btn-soft-sm" data-act="claim-admin">🔑 區長啟用後台</button>` : ''}
+          ${!isLoggedIn ? `<button class="btn-primary-sm" data-act="load-demo">✨ 單機體驗第 100 天進度</button>` : ''}
+          <button class="btn-danger-sm" data-act="reset-all">🗑️ 重設本機暫存</button>
         </div>
       </section>
     </div>
   `;
 
-  container.querySelector('[data-act="save-profile"]')?.addEventListener('click', () => {
+  container.querySelector('[data-act="open-admin"]')?.addEventListener('click', () => {
+    openAdminDashboard({ showToast });
+  });
+
+  container.querySelector('[data-act="open-auth"]')?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('open-auth-modal'));
+  });
+
+  container.querySelector('[data-act="logout-cloud"]')?.addEventListener('click', async () => {
+    if (!confirm('確定要登出目前帳號嗎？（您的進度都已安全保存在雲端）')) return;
+    await store.logoutCloud();
+    showToast('已登出帳號');
+  });
+
+  container.querySelector('[data-act="save-profile"]')?.addEventListener('click', async () => {
     const nickname = container.querySelector('#me-nickname').value;
-    const churchName = container.querySelector('#me-church').value;
     const startDate = container.querySelector('#me-start').value;
-    store.updateProfile({ nickname, churchName, startDate });
-    showToast('⭐ 個人檔案設定已儲存！');
+    const groupSel = container.querySelector('#me-group');
+    const groupId = groupSel ? Number(groupSel.value) : undefined;
+    try {
+      await store.updateProfile({ nickname, startDate, groupId });
+      showToast('⭐ 個人檔案設定已儲存並同步！');
+    } catch (err) {
+      showToast(err.message);
+    }
+  });
+
+  container.querySelector('[data-act="claim-admin"]')?.addEventListener('click', async () => {
+    const code = prompt('請輸入區長專屬啟用碼：');
+    if (!code) return;
+    try {
+      const res = await api.claimAdmin(code.trim());
+      await store.refreshFromCloud();
+      showToast(res.message);
+      openAdminDashboard({ showToast });
+    } catch (err) {
+      showToast(err.message);
+    }
   });
 
   container.querySelector('[data-act="load-demo"]')?.addEventListener('click', () => {
     store.loadDemoProgress();
-    showToast('🎉 已載入第 100 天示範進度！所有花園物件與探索地圖已解鎖，快去花園切換「夜晚」試試看！');
+    showToast('🎉 已載入第 100 天單機示範進度！');
   });
 
   container.querySelector('[data-act="reset-all"]')?.addEventListener('click', () => {
-    if (confirm('確定要重設所有讀經進度、日記與花園擺設嗎？')) {
+    if (confirm('確定要清除本機瀏覽器的暫存紀錄嗎？')) {
       store.resetAll();
-      showToast('已重設全部進度，重新出發！');
+      showToast('已清除本機暫存');
     }
   });
 }

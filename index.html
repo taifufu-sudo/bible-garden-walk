@@ -58,9 +58,9 @@
       <span class="nav-lbl">花園</span>
       <span class="nav-badge" id="nav-garden-badge" hidden>1</span>
     </button>
-    <button class="nav-btn" data-tab="journal">
-      <span class="nav-ico">💌</span>
-      <span class="nav-lbl">日記</span>
+    <button class="nav-btn" data-tab="group">
+      <span class="nav-ico">🤝</span>
+      <span class="nav-lbl">小組</span>
     </button>
     <button class="nav-btn" data-tab="me">
       <span class="nav-ico">⭐</span>
@@ -68,43 +68,8 @@
     </button>
   </nav>
 
-  <!-- Onboarding Overlay (Properly toggles aria-hidden!) -->
-  <div id="onboard-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboard-heading" aria-hidden="true">
-    <div class="modal-card onboard-card">
-      <div class="onboard-hero-preview">
-        <img src="assets/garden/garden_morning.jpg" alt="晨光恩典花園預覽">
-        <div class="onboard-hero-chip">🌅 早晨 · ☀️ 中午 · 🌇 黃昏 · 🌙 夜晚</div>
-      </div>
-      <div class="onboard-content">
-        <h2 id="onboard-heading">🌱 開始你的一年讀經探險</h2>
-        <p class="muted-sm">
-          每天讀 3 章聖經，就像皮可敏散步一樣累積步數、沿途種花、驅散 66 卷地圖迷霧，並用解鎖的夥伴與擺飾自由佈置會隨日夜變換光影的恩典花園！
-        </p>
-
-        <div class="onboard-form">
-          <div class="form-field">
-            <label for="onboard-date">📅 預計開始日期</label>
-            <input type="date" id="onboard-date">
-          </div>
-          <div class="onboard-two-col">
-            <div class="form-field">
-              <label for="onboard-name">旅人暱稱（選填）</label>
-              <input type="text" id="onboard-name" maxlength="20" placeholder="例如：銘福">
-            </div>
-            <div class="form-field">
-              <label for="onboard-church">教會名稱</label>
-              <input type="text" id="onboard-church" maxlength="24" value="安平靈糧堂">
-            </div>
-          </div>
-        </div>
-
-        <div class="onboard-actions">
-          <button id="onboard-start-btn" class="btn-primary-full">🚀 從今天開始讀經</button>
-          <button id="onboard-demo-btn" class="btn-soft-full">✨ 先體驗「第 100 天」完整光影花園</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Pastoral Zone Phone + 4-Digit Birthday Auth Modal -->
+  <div id="auth-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="牧區讀經登入與註冊" aria-hidden="true"></div>
 
   <!-- Full-Screen Anti-Skim Bible Reader Overlay -->
   <div id="reader-modal" class="modal-backdrop reader-backdrop" role="dialog" aria-modal="true" aria-labelledby="reader-title" aria-hidden="true">

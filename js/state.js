@@ -1,4 +1,4 @@
-// Application State Manager with localStorage persistence & 100-verse continuous unlock economy
+// Application State Manager — Cloud-Synced Pastoral Zone Multiplayer + Local Fallback
 import {
   BIBLE_BOOKS,
   READING_PLAN,
@@ -14,6 +14,7 @@ import {
   getRewardForPluckIndex,
   detectRealTimePhase
 } from './garden-catalog.js';
+import { api, getAuthToken, setAuthToken } from './api.js';
 
 const STORAGE_KEY = 'bible_garden_walk_v2';
 const LEGACY_KEY = 'bible_garden_walk_v1';
@@ -53,14 +54,15 @@ function defaultState() {
     nickname: '',
     churchName: '安平靈糧堂',
     startDate: todayISO(),
-    readChapters: {},     // { "1:1": "2026-11-26" }
-    graceDays: {},        // { "2026-11-25": "weekKey" }
-    pluckedCount: 0,      // 1 garden unlock earned every 100 verses read (up to 311 across the Bible!)
-    pluckedLog: [],       // [{ id, num, itemId, name, date }]
-    gardenItems: structuredClone(STARTER_LAYOUT), // Starts wide-open & empty!
-    timeMode: 'auto',     // 'auto' | 'morning' | 'noon' | 'dusk' | 'night'
-    readerFontSize: 'md', // 'sm' | 'md' | 'lg' | 'xl'
-    journal: []           // [{ id, date, verse, note, mood }]
+    readChapters: {},
+    graceDays: {},
+    pluckedCount: 0,
+    pluckedLog: [],
+    waterEnergy: 0,       // Bonus seedling energy from groupmates watering & weekly group goals!
+    gardenItems: structuredClone(STARTER_LAYOUT),
+    timeMode: 'auto',
+    readerFontSize: 'md',
+    journal: []
   };
 }
 
@@ -68,17 +70,20 @@ class AppStore {
   constructor() {
     this.state = this._load();
     this.listeners = new Set();
-    this.activeTab = 'garden';
+    this.activeTab = 'today';
     this.selectedDate = todayISO();
+
+    // Cloud Multiplayer Session State
+    this.cloudUser = null;
+    this.cloudInbox = [];
+    this.cloudGroups = [];
+    this.syncTimer = null;
   }
 
   _load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        return { ...defaultState(), ...JSON.parse(raw) };
-      }
-      // Smoothly migrate v1 reading progress & journal while starting fresh on the new spacious Style B lawn
+      if (raw) return { ...defaultState(), ...JSON.parse(raw) };
       const legacy = localStorage.getItem(LEGACY_KEY);
       if (legacy) {
         const old = JSON.parse(legacy);
@@ -93,7 +98,7 @@ class AppStore {
           pluckedCount: old.pluckedCount || 0,
           readerFontSize: old.readerFontSize || 'md',
           journal: Array.isArray(old.journal) ? old.journal : [],
-          gardenItems: [] // Fresh empty Style B lawn!
+          gardenItems: []
         };
       }
       return defaultState();
@@ -105,9 +110,7 @@ class AppStore {
   _save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-    } catch {
-      // Storage quota fallback
-    }
+    } catch {}
   }
 
   subscribe(fn) {
@@ -115,9 +118,109 @@ class AppStore {
     return () => this.listeners.delete(fn);
   }
 
-  notify() {
+  notify({ skipCloudSync = false } = {}) {
     this._save();
+    if (!skipCloudSync && this.isCloudLoggedIn()) {
+      this._scheduleCloudSync();
+    }
     for (const fn of this.listeners) fn(this.state);
+  }
+
+  isCloudLoggedIn() {
+    return Boolean(getAuthToken() && this.cloudUser);
+  }
+
+  applyCloudUserPayload(user, inbox = null, journalRows = null) {
+    this.cloudUser = user;
+    if (Array.isArray(inbox)) this.cloudInbox = inbox;
+    this.state.onboarded = true;
+    this.state.nickname = user.nickname || this.state.nickname;
+    this.state.churchName = user.churchName || this.state.churchName;
+    this.state.startDate = user.startDate || this.state.startDate;
+    this.state.readChapters = user.readChapters || {};
+    this.state.graceDays = user.graceDays || {};
+    this.state.gardenItems = Array.isArray(user.gardenItems) ? user.gardenItems : [];
+    this.state.pluckedCount = user.pluckedCount || 0;
+    this.state.waterEnergy = user.waterEnergy || 0;
+    if (Array.isArray(journalRows)) {
+      this.state.journal = journalRows.map(r => ({
+        id: String(r.id),
+        date: r.date_iso,
+        mood: r.mood || '✨',
+        verse: r.verse || '',
+        note: r.note || '',
+        isShared: Boolean(r.is_shared)
+      }));
+    }
+    this.notify({ skipCloudSync: true });
+  }
+
+  async hydrateCloudSession() {
+    try {
+      const grpRes = await api.getGroups();
+      this.cloudGroups = grpRes.groups || [];
+    } catch {
+      // Offline fallback groups
+      this.cloudGroups = [
+        { id: 1, name: '迦南' }, { id: 2, name: '讚美' }, { id: 3, name: '宇光' },
+        { id: 4, name: '何其美' }, { id: 5, name: '橄欖樹' }, { id: 6, name: '跨越' }, { id: 7, name: '五餅二魚' }
+      ];
+    }
+
+    if (!getAuthToken()) return false;
+    try {
+      const res = await api.getMe();
+      this.applyCloudUserPayload(res.user, res.inbox, res.journal);
+      return true;
+    } catch (err) {
+      if (err.status === 401) {
+        setAuthToken('');
+        this.cloudUser = null;
+      }
+      return false;
+    }
+  }
+
+  async refreshFromCloud() {
+    if (!getAuthToken()) return;
+    try {
+      const res = await api.getMe();
+      this.applyCloudUserPayload(res.user, res.inbox, res.journal);
+    } catch {}
+  }
+
+  async logoutCloud() {
+    try { await api.logout(); } catch {}
+    setAuthToken('');
+    this.cloudUser = null;
+    this.cloudInbox = [];
+    this.state = defaultState();
+    this.notify({ skipCloudSync: true });
+  }
+
+  _scheduleCloudSync() {
+    clearTimeout(this.syncTimer);
+    this.syncTimer = setTimeout(() => this.syncNow(), 550);
+  }
+
+  async syncNow() {
+    if (!this.isCloudLoggedIn()) return;
+    const stats = this.getStats();
+    try {
+      await api.syncMe({
+        readChapters: this.state.readChapters,
+        graceDays: this.state.graceDays,
+        gardenItems: this.state.gardenItems,
+        pluckedCount: this.state.pluckedCount,
+        versesRead: stats.versesRead,
+        chaptersRead: stats.chaptersRead,
+        booksCompleted: stats.booksCompleted,
+        currentStreak: stats.currentStreak,
+        longestStreak: stats.longestStreak
+      });
+    } catch {
+      // Quietly retry on next action if briefly offline
+    }
   }
 
   getActiveTimePhase() {
@@ -127,7 +230,7 @@ class AppStore {
 
   setTimeMode(mode) {
     this.state.timeMode = mode;
-    this.notify();
+    this.notify({ skipCloudSync: true });
   }
 
   completeOnboarding(startDate, nickname, churchName) {
@@ -141,27 +244,33 @@ class AppStore {
     this.notify();
   }
 
-  updateProfile({ nickname, churchName, startDate }) {
+  async updateProfile({ nickname, churchName, startDate, groupId }) {
     if (nickname !== undefined) this.state.nickname = nickname.trim().slice(0, 20);
     if (churchName !== undefined && churchName.trim()) {
       this.state.churchName = churchName.trim().slice(0, 24);
     }
     if (startDate) this.state.startDate = startDate;
-    this.notify();
+    if (this.isCloudLoggedIn()) {
+      const res = await api.updateProfile({
+        nickname: this.state.nickname,
+        churchName: this.state.churchName,
+        startDate: this.state.startDate,
+        groupId
+      });
+      this.cloudUser = res.user;
+    }
+    this.notify({ skipCloudSync: true });
   }
 
   setReaderFontSize(sz) {
     this.state.readerFontSize = sz;
-    this.notify();
+    this.notify({ skipCloudSync: true });
   }
 
   markChapterRead(bookId, chapter, read = true) {
     const key = `${bookId}:${chapter}`;
-    if (read) {
-      this.state.readChapters[key] = todayISO();
-    } else {
-      delete this.state.readChapters[key];
-    }
+    if (read) this.state.readChapters[key] = todayISO();
+    else delete this.state.readChapters[key];
     this.notify();
   }
 
@@ -249,13 +358,14 @@ class AppStore {
       }
     }
 
-    // 100-Verse Continuous Garden Unlock Math (31,102 verses = 311 total item drops!)
-    const totalEarnedSeedlings = Math.floor(versesRead / 100);
+    // Seedling Energy = Honest Bible Verses + Group Watering / Weekly Bonus Energy!
+    const waterEnergy = this.state.waterEnergy || 0;
+    const totalSeedlingEnergy = versesRead + waterEnergy;
+    const totalEarnedSeedlings = Math.floor(totalSeedlingEnergy / 100);
     const effectivePlucked = Math.min(this.state.pluckedCount, totalEarnedSeedlings);
     const readyToPluck = Math.max(0, totalEarnedSeedlings - effectivePlucked);
-    const nextSeedlingProgress = versesRead % 100;
+    const nextSeedlingProgress = totalSeedlingEnergy % 100;
 
-    // Exact owned stock per item based on starter gifts + plucked 100-verse rewards
     const inventoryStock = computeInventoryStock(effectivePlucked);
     const unlockedItemIds = new Set();
     let totalOwnedObjects = 0;
@@ -288,6 +398,7 @@ class AppStore {
 
     return {
       versesRead,
+      waterEnergy,
       totalVerses: TOTAL_VERSES,
       percent: Number(((versesRead / TOTAL_VERSES) * 100).toFixed(1)),
       chaptersRead,
@@ -309,7 +420,6 @@ class AppStore {
     };
   }
 
-  // Pluck 1 ready 100-verse seedling -> unlocks next new item or bonus copy!
   pluckSeedling() {
     const stats = this.getStats();
     if (stats.readyToPluck <= 0) return null;
@@ -355,7 +465,6 @@ class AppStore {
     return count;
   }
 
-  // Free-form Garden Placement (respecting earned inventory stock!)
   addGardenItem(itemId, xPct = 55, yPct = 68) {
     const stats = this.getStats();
     const owned = stats.inventoryStock.get(itemId) || 0;
@@ -421,16 +530,15 @@ class AppStore {
       mood: mood || '✨'
     };
     this.state.journal.unshift(entry);
-    this.notify();
+    this.notify({ skipCloudSync: true });
     return entry;
   }
 
   deleteJournalEntry(id) {
     this.state.journal = this.state.journal.filter(j => j.id !== id);
-    this.notify();
+    this.notify({ skipCloudSync: true });
   }
 
-  // Demo Mode: 100 days read (8,512 verses = 85 unlocks across all 22 Style B items!), with 3 ready to pluck!
   loadDemoProgress() {
     const start = addDaysISO(todayISO(), -99);
     this.state.onboarded = true;
@@ -445,22 +553,8 @@ class AppStore {
       }
     }
     this.state.graceDays = {};
-    this.state.pluckedCount = 82; // 85 earned -> 82 already unpacked (3-5 copies of every item!), 3 ready to pluck!
-    this.state.pluckedLog = [
-      { id: 'unlock-82', num: 82, itemId: 'deer', name: '溪水小鹿', date: todayISO() },
-      { id: 'unlock-81', num: 81, itemId: 'string_lights', name: '星空串燈', date: addDaysISO(todayISO(), -1) },
-      { id: 'unlock-80', num: 80, itemId: 'bunny', name: '恩典小白兔', date: addDaysISO(todayISO(), -2) }
-    ];
+    this.state.pluckedCount = 82;
     this.state.gardenItems = structuredClone(SHOWCASE_LAYOUT);
-    if (this.state.journal.length === 0) {
-      this.state.journal.push({
-        id: 'j-demo-1',
-        date: todayISO(),
-        verse: '詩篇 23:1-2',
-        note: '今天走完第 100 天讀經！粉彩花園裡的小羊、小鹿與小白兔在月光下安穩睡著了，明燈和星空串燈好溫暖。',
-        mood: '🕊️'
-      });
-    }
     this.selectedDate = todayISO();
     this.notify();
   }
@@ -468,7 +562,7 @@ class AppStore {
   resetAll() {
     this.state = defaultState();
     this.selectedDate = todayISO();
-    this.notify();
+    this.notify({ skipCloudSync: true });
   }
 }
 
