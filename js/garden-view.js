@@ -599,31 +599,26 @@ function renderStudioOverlay({ showToast, rerenderParent }) {
     <div class="studio-ambient-blur" style="background-image:url('${phase.backdrop}')" aria-hidden="true"></div>
 
     <div class="studio-surface">
-      <!-- Top Floating Control Bar (Hidden in pure Screensaver mode) -->
+      <!-- Top Floating Compact Single-Row Control Bar (Hidden in pure Screensaver mode) -->
       <header class="studio-topbar">
         <div class="studio-top-left">
           <button class="studio-pill-btn primary-exit" data-st="close">◀ 返回</button>
           ${isPortraitScreen ? `
             <button class="studio-pill-btn ${useRotated90 ? 'is-on' : ''}" data-st="toggle-rotate" title="直向手機一鍵橫幅滿版">
-              🔄 ${useRotated90 ? '轉回直向' : '橫幅模式'}
+              🔄 ${useRotated90 ? '直向' : '橫幅'}
             </button>
           ` : ''}
-          <button class="studio-pill-btn" data-st="toggle-screensaver" title="隱藏介面純淨欣賞">
-            🖼️ 純淨欣賞
-          </button>
+          <button class="studio-pill-btn" data-st="toggle-screensaver" title="隱藏介面純淨欣賞">🖼️ 欣賞</button>
+          <button class="studio-pill-btn" data-st="cycle-zoom" title="縮放草地檢視">🔍 ${Math.round(studioZoom * 100)}%</button>
+          <button class="studio-pill-btn" data-st="showcase" title="一鍵參考擺設">✨ 擺設</button>
+          <button class="studio-pill-btn" data-st="clear" title="清除草地所有物件">🧹 清除</button>
         </div>
 
         <div class="studio-time-pills" role="group" aria-label="光影切換">
-          <button class="st-time-btn ${state.timeMode === 'auto' ? 'active' : ''}" data-st-time="auto">🕒<small>${realPhase.label}</small></button>
+          <button class="st-time-btn ${state.timeMode === 'auto' ? 'active' : ''}" data-st-time="auto" title="自動跟隨時間（目前：${realPhase.label}）">自動</button>
           ${Object.values(TIME_PHASES).map(tp => `
-            <button class="st-time-btn ${state.timeMode === tp.id ? 'active' : ''}" data-st-time="${tp.id}">${tp.emoji}</button>
+            <button class="st-time-btn ${state.timeMode === tp.id ? 'active' : ''}" data-st-time="${tp.id}" title="${tp.label}">${tp.emoji}</button>
           `).join('')}
-        </div>
-
-        <div class="studio-top-right">
-          <button class="studio-pill-btn" data-st="cycle-zoom" title="縮放草地檢視">🔍 ${Math.round(studioZoom * 100)}%</button>
-          <button class="studio-pill-btn" data-st="showcase" title="一鍵參考擺設">✨ 擺設</button>
-          <button class="studio-pill-btn" data-st="clear" title="全部收回">🧹</button>
         </div>
       </header>
 
