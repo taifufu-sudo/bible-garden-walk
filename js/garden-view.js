@@ -415,45 +415,31 @@ export function renderGardenView(container, { showToast }) {
         </div>
 
         <div class="time-switcher" role="group" aria-label="花園光影時段切換">
-          <button class="time-btn ${state.timeMode === 'auto' ? 'active' : ''}" data-time-mode="auto">
-            🕒 自動<small>(${realPhase.label})</small>
-          </button>
+          <button class="time-btn ${state.timeMode === 'auto' ? 'active' : ''}" data-time-mode="auto" title="自動跟隨目前時段（${realPhase.label}）">自動</button>
           ${Object.values(TIME_PHASES).map(tp => `
-            <button class="time-btn ${state.timeMode === tp.id ? 'active' : ''}" data-time-mode="${tp.id}">
-              ${tp.emoji} ${tp.label}
-            </button>
+            <button class="time-btn ${state.timeMode === tp.id ? 'active' : ''}" data-time-mode="${tp.id}">${tp.label}</button>
           `).join('')}
         </div>
 
-        <!-- Clickable Live Thumbnail Preview (tapping opens Full-Screen Studio!) -->
+        <!-- Clean Unobstructed Live Thumbnail Preview (tapping opens Full-Screen Studio!) -->
         <div class="garden-thumb-shell" data-act="open-studio-edit" role="button" tabindex="0" aria-label="點擊進入全螢幕花園編輯與欣賞模式">
           <div class="garden-stage garden-stage-preview phase-${phase.id}" id="garden-stage-preview">
             ${buildGardenStageInnerHtml({
               phase,
               items: state.gardenItems,
               interactive: false,
-              showEmptyHint: true
+              showEmptyHint: false
             })}
-            <div class="garden-corner-badge">
-              <span>${phase.emoji} ${phase.label}</span>
-              <span class="sep">·</span>
-              <span>已擺 ${state.gardenItems.length} 件</span>
-              <span class="sep">·</span>
-              <span>${phase.animalsSleep ? '💤 動物安歇' : '🐾 散步中'}</span>
-            </div>
-            <div class="thumb-hover-cta">
-              <span>⛶ 點擊展開全螢幕大空間編輯</span>
-            </div>
           </div>
         </div>
 
-        <!-- Prominent Action Buttons for Mobile & Desktop -->
+        <!-- Prominent Single-Line Action Buttons -->
         <div class="studio-launch-row">
           <button class="btn-primary-full" data-act="open-studio-edit">
-            ✏️ 全螢幕編輯花園（支援橫幅大畫面）
+            ✏️ 全螢幕編輯花園
           </button>
           <button class="btn-soft-full" data-act="open-studio-screensaver">
-            🖼️ 純淨螢幕欣賞模式（當作療癒桌布）
+            🖼️ 純淨螢幕欣賞模式
           </button>
         </div>
       </section>
