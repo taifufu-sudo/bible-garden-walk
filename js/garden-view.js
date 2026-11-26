@@ -655,50 +655,50 @@ function renderStudioOverlay({ showToast, rerenderParent }) {
         </div>
       </div>
 
-      <!-- Subtle Floating Ambient Clock & Verse Overlay (Only in Pure Screensaver Mode!) -->
+      <!-- Subtle Floating Ambient Clock & Verse Overlay in Open Upper-Right Sky (Pure Screensaver Mode) -->
       ${studioScreensaver ? `
-        <div class="screensaver-hud ${studioShowClock ? '' : 'minimal'}">
-          ${studioShowClock ? `
-            <div class="ss-clock-card">
-              <div class="ss-time-row">
-                <span id="screensaver-clock-time">${formatClockNow()}</span>
-                <span class="ss-phase-tag">${phase.emoji} ${phase.label}</span>
-              </div>
-              <div class="ss-verse">${phase.animalsSleep ? '「我必安然躺下睡覺，因為獨有你耶和華使我安然居住。」詩 4:8' : '「他使我躺臥在青草地上，領我在可安歇的水邊。」詩 23:2'}</div>
+        ${studioShowClock ? `
+          <div class="ss-clock-corner">
+            <div class="ss-time-row">
+              <span class="ss-phase-tag">${phase.emoji} ${phase.label}</span>
+              <span id="screensaver-clock-time">${formatClockNow()}</span>
             </div>
-          ` : ''}
-          <div class="ss-micro-actions">
-            <button class="ss-chip-btn" data-st="toggle-clock">${studioShowClock ? '隱藏時鐘' : '顯示時鐘'}</button>
-            <button class="ss-chip-btn" data-st="toggle-cover">${studioFillCover ? '完整顯示' : '滿版填滿'}</button>
-            <button class="ss-chip-btn" data-st="exit-screensaver">✏️ 回到編輯</button>
+            <div class="ss-verse">${phase.animalsSleep ? '「我必安然躺下睡覺，因為獨有你耶和華使我安然居住。」詩 4:8' : '「他使我躺臥在青草地上，領我在可安歇的水邊。」詩 23:2'}</div>
           </div>
+        ` : ''}
+        <div class="ss-micro-corner">
+          <button class="ss-chip-btn" data-st="toggle-clock">${studioShowClock ? '隱藏時鐘' : '顯示時鐘'}</button>
+          <button class="ss-chip-btn" data-st="toggle-cover">${studioFillCover ? '完整顯示' : '滿版填滿'}</button>
+          <button class="ss-chip-btn" data-st="exit-screensaver">✏️ 編輯</button>
         </div>
       ` : ''}
 
-      <!-- Bottom Collapsible Inventory Drawer (Edit Mode) -->
+      <!-- Bottom-Right Compact Floating Inventory FAB Icon (Opens Drawer on Tap!) -->
       ${!studioScreensaver ? `
-        <div class="studio-bottom-dock ${studioDrawerOpen ? 'is-open' : ''}">
-          <div class="studio-dock-handle-row">
-            <button class="studio-drawer-toggle" data-st="toggle-drawer">
-              🎒 ${studioDrawerOpen ? '收合收藏庫（檢視完整草地）▾' : `開啟收藏庫擺放物件（已擺 ${state.gardenItems.length} / 擁有 ${stats.totalOwnedObjects} 件）▴`}
-            </button>
-          </div>
-
-          ${studioDrawerOpen ? `
+        ${!studioDrawerOpen ? `
+          <button class="studio-fab-bag" data-st="toggle-drawer" aria-label="開啟花園收藏庫" title="開啟收藏庫擺放物件">
+            <span class="fab-ico">🎒</span>
+            <span class="fab-badge">${Math.max(0, stats.totalOwnedObjects - state.gardenItems.length)}</span>
+          </button>
+        ` : `
+          <div class="studio-bottom-dock is-open">
             <div class="studio-drawer-body">
-              <div class="filter-pills studio-filter-pills">
-                <button class="filter-pill ${trayCategory === 'all' ? 'active' : ''}" data-st-cat="all">全部</button>
-                <button class="filter-pill ${trayCategory === 'animal' ? 'active' : ''}" data-st-cat="animal">🐑 動物</button>
-                <button class="filter-pill ${trayCategory === 'light' ? 'active' : ''}" data-st-cat="light">🏮 燈飾</button>
-                <button class="filter-pill ${trayCategory === 'plant' ? 'active' : ''}" data-st-cat="plant">🌷 花木</button>
-                <button class="filter-pill ${trayCategory === 'structure' ? 'active' : ''}" data-st-cat="structure">🏡 建築</button>
+              <div class="studio-drawer-head">
+                <div class="filter-pills studio-filter-pills">
+                  <button class="filter-pill ${trayCategory === 'all' ? 'active' : ''}" data-st-cat="all">全部</button>
+                  <button class="filter-pill ${trayCategory === 'animal' ? 'active' : ''}" data-st-cat="animal">🐑 動物</button>
+                  <button class="filter-pill ${trayCategory === 'light' ? 'active' : ''}" data-st-cat="light">🏮 燈飾</button>
+                  <button class="filter-pill ${trayCategory === 'plant' ? 'active' : ''}" data-st-cat="plant">🌷 花木</button>
+                  <button class="filter-pill ${trayCategory === 'structure' ? 'active' : ''}" data-st-cat="structure">🏡 建築</button>
+                </div>
+                <button class="studio-drawer-close" data-st="toggle-drawer" aria-label="收合收藏庫">✕</button>
               </div>
               <div class="studio-tray-strip">
                 ${buildTrayItemsHtml(stats, placedCountByItem, true)}
               </div>
             </div>
-          ` : ''}
-        </div>
+          </div>
+        `}
       ` : ''}
     </div>
   `;

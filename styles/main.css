@@ -853,12 +853,12 @@ body[data-time-phase="night"] .year-pct { color: #c7d6f0; }
 .time-btn[data-time-mode="dusk"].active { background: #c56d38; border-color: #c56d38; }
 .time-btn[data-time-mode="night"].active { background: #263861; border-color: #263861; }
 
-/* The Interactive Garden Stage — Native 16:9 Widescreen, strictly isolated! */
+/* The Interactive Garden Stage — Native 21:9 Ultrawide Panoramic! */
 .garden-stage {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  max-height: 540px;
+  aspect-ratio: 21 / 9;
+  max-height: 460px;
   border-radius: 20px;
   overflow: hidden;
   isolation: isolate;
@@ -1615,13 +1615,13 @@ body.studio-lock-scroll {
 }
 
 .garden-stage-preview {
-  max-height: 360px;
-  aspect-ratio: 16 / 9;
+  max-height: 320px;
+  aspect-ratio: 21 / 9;
 }
 @media (min-width: 640px) {
   .garden-stage-preview {
-    max-height: 480px;
-    aspect-ratio: 16 / 9;
+    max-height: 400px;
+    aspect-ratio: 21 / 9;
   }
 }
 
@@ -1809,45 +1809,45 @@ body.studio-lock-scroll {
   transition: transform 0.28s ease;
 }
 
-/* Keep exact 16:9 widescreen ratio so landscape full-screen fills edge-to-edge! */
+/* Keep exact 21:9 ultrawide ratio so modern phones (19.5:9 / 20:9 / 21:9) fill completely edge-to-edge! */
 .garden-stage-studio {
-  width: min(100%, calc(100dvh * 16 / 9));
+  width: min(100%, calc(100dvh * 21 / 9));
   height: auto;
   max-height: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 12px;
+  aspect-ratio: 21 / 9;
+  border-radius: 10px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
 }
 
 .studio-backdrop.is-rotated-90 .garden-stage-studio {
-  width: min(100dvh, calc(100vw * 16 / 9));
+  width: min(100dvh, calc(100vw * 21 / 9));
   height: auto;
   max-height: 100vw;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
+  aspect-ratio: 21 / 9;
+  border-radius: 0;
 }
 
-/* Optional edge-to-edge full-cover zoom inside Pure Screensaver Mode */
+/* Edge-to-edge full-cover fill inside Pure Screensaver Mode */
 .studio-canvas-viewport.fill-cover .garden-stage-studio {
-  width: max(100%, calc(100dvh * 16 / 9));
+  width: max(100%, calc(100dvh * 21 / 9));
   height: auto;
   max-height: none;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 21 / 9;
   border-radius: 0;
 }
 .studio-backdrop.is-rotated-90 .studio-canvas-viewport.fill-cover .garden-stage-studio {
-  width: max(100dvh, calc(100vw * 16 / 9));
+  width: max(100dvh, calc(100vw * 21 / 9));
   height: auto;
   max-height: none;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 21 / 9;
 }
 
-/* Living Sparkling Water Ripples & Glints over the Lower-Left Lotus Pond */
+/* Living Sparkling Water Ripples & Glints over the Lower-Left Lotus Pond (21:9 coordinates) */
 .pond-water-shimmer {
   position: absolute;
-  left: 1%;
+  left: 0.5%;
   top: 61%;
-  width: 35%;
+  width: 27%;
   height: 28%;
   pointer-events: none;
   z-index: 3;
@@ -1885,74 +1885,127 @@ body.studio-lock-scroll {
   50% { opacity: 0.95; transform: scale(1.35); }
 }
 
-/* Pure Screensaver Ambient Clock & Verse HUD */
-.screensaver-hud {
+/* Pure Screensaver Clock & Verse — Tucked Gently into the Open Upper-Right Sky! */
+.ss-clock-corner {
   position: absolute;
-  left: max(16px, env(safe-area-inset-left));
+  top: max(12px, env(safe-area-inset-top));
   right: max(16px, env(safe-area-inset-right));
-  bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 45;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  text-align: right;
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 16px;
+  padding: 8px 14px;
+  color: #24382c;
+  max-width: min(360px, 46%);
   pointer-events: none;
+  box-shadow: 0 6px 20px rgba(30, 50, 42, 0.10);
+}
+.studio-backdrop.phase-night .ss-clock-corner,
+.studio-backdrop.phase-dusk .ss-clock-corner {
+  background: rgba(18, 28, 48, 0.44);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
 
-.ss-clock-card {
-  background: rgba(20, 30, 36, 0.50);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 18px;
-  padding: 10px 16px;
-  color: #ffffff;
-  max-width: min(440px, 72%);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
-}
 .ss-time-row {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 8px;
 }
 #screensaver-clock-time {
-  font-size: 1.75rem;
+  font-size: 1.55rem;
   font-weight: 900;
   letter-spacing: 0.04em;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 .ss-phase-tag {
-  font-size: 0.86rem;
-  font-weight: 700;
-  opacity: 0.92;
+  font-size: 0.8rem;
+  font-weight: 800;
+  opacity: 0.88;
 }
 .ss-verse {
-  margin-top: 4px;
-  font-size: 0.84rem;
-  font-weight: 600;
-  opacity: 0.92;
-  line-height: 1.45;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.90;
+  line-height: 1.4;
 }
 
-.ss-micro-actions {
+.ss-micro-corner {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 45;
   display: inline-flex;
   gap: 6px;
-  pointer-events: auto;
-  flex-wrap: wrap;
+  opacity: 0.52;
+  transition: opacity 0.2s ease;
 }
+.ss-micro-corner:hover,
+.ss-micro-corner:active {
+  opacity: 1;
+}
+
 .ss-chip-btn {
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.30);
   background: rgba(20, 30, 36, 0.56);
   backdrop-filter: blur(10px);
   color: #ffffff;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  padding: 7px 12px;
+  padding: 6px 11px;
   border-radius: 999px;
   cursor: pointer;
 }
-.ss-chip-btn:hover { background: rgba(30, 46, 54, 0.8); }
+.ss-chip-btn:hover { background: rgba(30, 46, 54, 0.82); }
+
+/* Compact Bottom-Right Floating Inventory Bag Icon Button (FAB) */
+.studio-fab-bag {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 48;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  background: linear-gradient(135deg, #52b26c, #3b8e53);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(24, 52, 34, 0.34);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.studio-fab-bag:hover {
+  transform: scale(1.06);
+  box-shadow: 0 10px 28px rgba(24, 52, 34, 0.42);
+}
+.studio-fab-bag:active { transform: scale(0.96); }
+.fab-ico { font-size: 1.55rem; line-height: 1; }
+.fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f08a38;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* Bottom Collapsible Drawer in Studio Edit Mode */
 .studio-bottom-dock {
@@ -1960,32 +2013,34 @@ body.studio-lock-scroll {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 45;
+  z-index: 48;
   display: flex;
   flex-direction: column;
   align-items: center;
   pointer-events: none;
 }
 
-.studio-dock-handle-row {
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
-  pointer-events: auto;
-}
-.studio-bottom-dock.is-open .studio-dock-handle-row {
-  padding-bottom: 6px;
+.studio-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
-.studio-drawer-toggle {
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  background: rgba(255, 255, 255, 0.94);
-  color: #243e2d;
-  font-size: 0.9rem;
+.studio-drawer-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(115, 148, 125, 0.28);
+  background: #f3f8f4;
+  color: #365240;
+  font-size: 0.95rem;
   font-weight: 900;
-  padding: 9px 18px;
-  border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
+  flex-shrink: 0;
 }
+.studio-drawer-close:hover { background: #e4f0e8; }
 
 .studio-drawer-body {
   width: 100%;
