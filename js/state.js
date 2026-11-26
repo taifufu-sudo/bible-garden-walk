@@ -1,7 +1,6 @@
-// Application State Manager with localStorage persistence
+// Application State Manager with localStorage persistence & 100-verse continuous unlock economy
 import {
   BIBLE_BOOKS,
-  ALL_CHAPTERS,
   READING_PLAN,
   TOTAL_VERSES,
   TOTAL_CHAPTERS,
@@ -11,10 +10,13 @@ import {
   GARDEN_ITEMS,
   STARTER_LAYOUT,
   SHOWCASE_LAYOUT,
+  computeInventoryStock,
+  getRewardForPluckIndex,
   detectRealTimePhase
 } from './garden-catalog.js';
 
-const STORAGE_KEY = 'bible_garden_walk_v1';
+const STORAGE_KEY = 'bible_garden_walk_v2';
+const LEGACY_KEY = 'bible_garden_walk_v1';
 
 export function todayISO(d = new Date()) {
   const y = d.getFullYear();
@@ -40,7 +42,6 @@ export function diffDaysISO(startIso, targetIso) {
 export function getWeekKey(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   const dt = new Date(y, m - 1, d);
-  // Monday-based ISO week start date string
   const dayOfWeek = (dt.getDay() + 6) % 7;
   dt.setDate(dt.getDate() - dayOfWeek);
   return todayISO(dt);
@@ -52,13 +53,13 @@ function defaultState() {
     nickname: '',
     churchName: '安平靈糧堂',
     startDate: todayISO(),
-    readChapters: {},     // { "1:1": "2026-11-25" }
-    graceDays: {},        // { "2026-11-24": "weekKey" }
-    pluckedCount: 0,      // Pikmin-style plucked seedlings (1 per 100 verses)
-    pluckedLog: [],       // [{ id, species, name, date }]
-    gardenItems: structuredClone(STARTER_LAYOUT),
+    readChapters: {},     // { "1:1": "2026-11-26" }
+    graceDays: {},        // { "2026-11-25": "weekKey" }
+    pluckedCount: 0,      // 1 garden unlock earned every 100 verses read (up to 311 across the Bible!)
+    pluckedLog: [],       // [{ id, num, itemId, name, date }]
+    gardenItems: structuredClone(STARTER_LAYOUT), // Starts wide-open & empty!
     timeMode: 'auto',     // 'auto' | 'morning' | 'noon' | 'dusk' | 'night'
-    readerFontSize: 'md', // 'sm' | 'md' | 'lg'
+    readerFontSize: 'md', // 'sm' | 'md' | 'lg' | 'xl'
     journal: []           // [{ id, date, verse, note, mood }]
   };
 }
@@ -67,16 +68,35 @@ class AppStore {
   constructor() {
     this.state = this._load();
     this.listeners = new Set();
-    this.activeTab = 'garden'; // Will switch to 'today' after onboarding, or user clicks
+    this.activeTab = 'garden';
     this.selectedDate = todayISO();
   }
 
   _load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return defaultState();
-      const parsed = JSON.parse(raw);
-      return { ...defaultState(), ...parsed };
+      if (raw) {
+        return { ...defaultState(), ...JSON.parse(raw) };
+      }
+      // Smoothly migrate v1 reading progress & journal while starting fresh on the new spacious Style B lawn
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) {
+        const old = JSON.parse(legacy);
+        return {
+          ...defaultState(),
+          onboarded: Boolean(old.onboarded),
+          nickname: old.nickname || '',
+          churchName: old.churchName || '安平靈糧堂',
+          startDate: old.startDate || todayISO(),
+          readChapters: old.readChapters || {},
+          graceDays: old.graceDays || {},
+          pluckedCount: old.pluckedCount || 0,
+          readerFontSize: old.readerFontSize || 'md',
+          journal: Array.isArray(old.journal) ? old.journal : [],
+          gardenItems: [] // Fresh empty Style B lawn!
+        };
+      }
+      return defaultState();
     } catch {
       return defaultState();
     }
@@ -135,7 +155,6 @@ class AppStore {
     this.notify();
   }
 
-  // Toggle chapter read status
   markChapterRead(bookId, chapter, read = true) {
     const key = `${bookId}:${chapter}`;
     if (read) {
@@ -150,7 +169,6 @@ class AppStore {
     return Boolean(this.state.readChapters[`${bookId}:${chapter}`]);
   }
 
-  // Use weekly grace card on a specific date
   canUseGraceCard(dateIso = todayISO()) {
     const wk = getWeekKey(dateIso);
     return !Object.values(this.state.graceDays).includes(wk);
@@ -164,7 +182,6 @@ class AppStore {
     return true;
   }
 
-  // Computed metrics
   getStats() {
     let versesRead = 0;
     let chaptersRead = 0;
@@ -192,7 +209,6 @@ class AppStore {
       });
     }
 
-    // Check which day indices (1..365) are completed
     const completedPlanDays = new Set();
     for (const d of READING_PLAN) {
       if (d.chapters.every(c => this.state.readChapters[c.key])) {
@@ -200,7 +216,6 @@ class AppStore {
       }
     }
 
-    // Streak calculation relative to startDate up to today
     const today = todayISO();
     const todayPlanDay = diffDaysISO(this.state.startDate, today) + 1;
     let currentStreak = 0;
@@ -218,7 +233,6 @@ class AppStore {
         running = 0;
       }
     }
-    // Current streak: count backwards from today (or yesterday if today not finished yet)
     if (maxCheckDay >= 1) {
       let d = maxCheckDay;
       const todayIso = addDaysISO(this.state.startDate, d - 1);
@@ -235,12 +249,23 @@ class AppStore {
       }
     }
 
-    // Pikmin-style Seedling / Companion math (1 seedling blooms every 100 verses!)
+    // 100-Verse Continuous Garden Unlock Math (31,102 verses = 311 total item drops!)
     const totalEarnedSeedlings = Math.floor(versesRead / 100);
-    const readyToPluck = Math.max(0, totalEarnedSeedlings - this.state.pluckedCount);
+    const effectivePlucked = Math.min(this.state.pluckedCount, totalEarnedSeedlings);
+    const readyToPluck = Math.max(0, totalEarnedSeedlings - effectivePlucked);
     const nextSeedlingProgress = versesRead % 100;
 
-    // Unlocked fruit stages
+    // Exact owned stock per item based on starter gifts + plucked 100-verse rewards
+    const inventoryStock = computeInventoryStock(effectivePlucked);
+    const unlockedItemIds = new Set();
+    let totalOwnedObjects = 0;
+    for (const [itemId, qty] of inventoryStock.entries()) {
+      if (qty > 0) {
+        unlockedItemIds.add(itemId);
+        totalOwnedObjects += qty;
+      }
+    }
+
     const unlockedFruits = FRUIT_STAGES.map(stage => {
       let totalCh = 0;
       let readCh = 0;
@@ -261,18 +286,6 @@ class AppStore {
       };
     });
 
-    // Unlocked garden items
-    const unlockedItemIds = new Set();
-    for (const item of GARDEN_ITEMS) {
-      if (item.starter) {
-        unlockedItemIds.add(item.id);
-      } else if (item.unlockVerses && versesRead >= item.unlockVerses) {
-        unlockedItemIds.add(item.id);
-      }
-    }
-    if (this.state.pluckedCount >= 1) unlockedItemIds.add('dove');
-    if (booksCompleted >= 1) unlockedItemIds.add('fountain');
-
     return {
       versesRead,
       totalVerses: TOTAL_VERSES,
@@ -285,52 +298,82 @@ class AppStore {
       currentStreak,
       longestStreak,
       totalEarnedSeedlings,
+      effectivePlucked,
       readyToPluck,
       nextSeedlingProgress,
+      inventoryStock,
+      totalOwnedObjects,
       unlockedFruits,
       unlockedItemIds,
       todayPlanDay
     };
   }
 
-  // Pluck a ready seedling (Pikmin Bloom style!)
+  // Pluck 1 ready 100-verse seedling -> unlocks next new item or bonus copy!
   pluckSeedling() {
     const stats = this.getStats();
     if (stats.readyToPluck <= 0) return null;
-    const speciesPool = [
-      { id: 'lamb', name: '青草地小羊', emoji: '🐑' },
-      { id: 'dove', name: '平安白鴿', emoji: '🕊️' },
-      { id: 'camel', name: '曠野小駱駝', emoji: '🐪' }
-    ];
-    const picked = speciesPool[this.state.pluckedCount % speciesPool.length];
-    this.state.pluckedCount += 1;
+    const nextIndex = stats.effectivePlucked + 1;
+    const rewardItem = getRewardForPluckIndex(nextIndex);
+    const prevQty = stats.inventoryStock.get(rewardItem.id) || 0;
+
+    this.state.pluckedCount = nextIndex;
     const entry = {
-      id: `pal-${this.state.pluckedCount}`,
-      num: this.state.pluckedCount,
-      species: picked.id,
-      name: `${picked.name} #${this.state.pluckedCount}`,
-      emoji: picked.emoji,
+      id: `unlock-${nextIndex}`,
+      num: nextIndex,
+      itemId: rewardItem.id,
+      name: rewardItem.name,
+      isNewSpecies: prevQty === 0,
+      newQty: prevQty + 1,
       date: todayISO()
     };
     this.state.pluckedLog.unshift(entry);
+    if (this.state.pluckedLog.length > 60) this.state.pluckedLog.length = 60;
     this.notify();
     return entry;
   }
 
-  // Garden manipulation (free-form x/y placement!)
-  addGardenItem(itemId, xPct = 50, yPct = 70) {
+  pluckAllSeedlings() {
+    const stats = this.getStats();
+    if (stats.readyToPluck <= 0) return 0;
+    const count = stats.readyToPluck;
+    let current = stats.effectivePlucked;
+    for (let k = 0; k < count; k++) {
+      current += 1;
+      const item = getRewardForPluckIndex(current);
+      this.state.pluckedLog.unshift({
+        id: `unlock-${current}`,
+        num: current,
+        itemId: item.id,
+        name: item.name,
+        date: todayISO()
+      });
+    }
+    this.state.pluckedCount = current;
+    if (this.state.pluckedLog.length > 60) this.state.pluckedLog.length = 60;
+    this.notify();
+    return count;
+  }
+
+  // Free-form Garden Placement (respecting earned inventory stock!)
+  addGardenItem(itemId, xPct = 55, yPct = 68) {
+    const stats = this.getStats();
+    const owned = stats.inventoryStock.get(itemId) || 0;
+    const placed = this.state.gardenItems.filter(g => g.itemId === itemId).length;
+    if (placed >= owned) return null;
+
     const uid = `g-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const placed = {
+    const item = {
       uid,
       itemId,
-      xPct: Math.max(8, Math.min(92, xPct)),
-      yPct: Math.max(36, Math.min(91, yPct)),
+      xPct: Math.max(6, Math.min(94, xPct)),
+      yPct: Math.max(36, Math.min(94, yPct)),
       scaleMult: 1.0,
       flipX: false
     };
-    this.state.gardenItems.push(placed);
+    this.state.gardenItems.push(item);
     this.notify();
-    return placed;
+    return item;
   }
 
   updateGardenItem(uid, patch) {
@@ -338,8 +381,8 @@ class AppStore {
     if (!target) return;
     Object.assign(target, patch);
     target.xPct = Math.max(6, Math.min(94, target.xPct));
-    target.yPct = Math.max(34, Math.min(92, target.yPct));
-    target.scaleMult = Math.max(0.65, Math.min(1.45, target.scaleMult || 1.0));
+    target.yPct = Math.max(36, Math.min(94, target.yPct));
+    target.scaleMult = Math.max(0.55, Math.min(1.45, target.scaleMult || 1.0));
     this.notify();
   }
 
@@ -350,10 +393,17 @@ class AppStore {
 
   applyShowcaseLayout() {
     const stats = this.getStats();
-    // Place all unlocked items from showcase layout
-    this.state.gardenItems = SHOWCASE_LAYOUT
-      .filter(i => stats.unlockedItemIds.has(i.itemId))
-      .map(i => ({ ...i, uid: `sc-${i.uid}-${Date.now().toString(36).slice(-3)}` }));
+    const used = new Map();
+    const next = [];
+    for (const sc of SHOWCASE_LAYOUT) {
+      const owned = stats.inventoryStock.get(sc.itemId) || 0;
+      const count = used.get(sc.itemId) || 0;
+      if (count < owned) {
+        used.set(sc.itemId, count + 1);
+        next.push({ ...sc, uid: `sc-${sc.uid}-${Date.now().toString(36).slice(-3)}` });
+      }
+    }
+    this.state.gardenItems = next;
     this.notify();
   }
 
@@ -362,7 +412,6 @@ class AppStore {
     this.notify();
   }
 
-  // Journal
   addJournalEntry({ verse, note, mood }) {
     const entry = {
       id: `j-${Date.now()}`,
@@ -381,7 +430,7 @@ class AppStore {
     this.notify();
   }
 
-  // Demo Mode: Populate 100 days of reading, companions, showcase garden, and sample journal!
+  // Demo Mode: 100 days read (8,512 verses = 85 unlocks across all 22 Style B items!), with 3 ready to pluck!
   loadDemoProgress() {
     const start = addDaysISO(todayISO(), -99);
     this.state.onboarded = true;
@@ -396,11 +445,11 @@ class AppStore {
       }
     }
     this.state.graceDays = {};
-    this.state.pluckedCount = 82; // Leaves ~3 ready to pluck so user can try the pluck animation!
+    this.state.pluckedCount = 82; // 85 earned -> 82 already unpacked (3-5 copies of every item!), 3 ready to pluck!
     this.state.pluckedLog = [
-      { id: 'pal-82', num: 82, species: 'lamb', name: '青草地小羊 #82', emoji: '🐑', date: todayISO() },
-      { id: 'pal-81', num: 81, species: 'camel', name: '曠野小駱駝 #81', emoji: '🐪', date: addDaysISO(todayISO(), -1) },
-      { id: 'pal-80', num: 80, species: 'dove', name: '平安白鴿 #80', emoji: '🕊️', date: addDaysISO(todayISO(), -2) }
+      { id: 'unlock-82', num: 82, itemId: 'deer', name: '溪水小鹿', date: todayISO() },
+      { id: 'unlock-81', num: 81, itemId: 'string_lights', name: '星空串燈', date: addDaysISO(todayISO(), -1) },
+      { id: 'unlock-80', num: 80, itemId: 'bunny', name: '恩典小白兔', date: addDaysISO(todayISO(), -2) }
     ];
     this.state.gardenItems = structuredClone(SHOWCASE_LAYOUT);
     if (this.state.journal.length === 0) {
@@ -408,7 +457,7 @@ class AppStore {
         id: 'j-demo-1',
         date: todayISO(),
         verse: '詩篇 23:1-2',
-        note: '今天走完第 100 天讀經！看見花園裡的小羊在月光下安穩睡著，心裡也跟著平靜下來。',
+        note: '今天走完第 100 天讀經！粉彩花園裡的小羊、小鹿與小白兔在月光下安穩睡著了，明燈和星空串燈好溫暖。',
         mood: '🕊️'
       });
     }

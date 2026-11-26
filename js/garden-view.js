@@ -1,14 +1,13 @@
-// Living 4-Time-of-Day Free-Form Interactive Garden (Morning / Noon / Dusk / Night)
-// Features:
-// - Pixel-aligned cross-fade backdrops for Morning, Noon, Dusk, Night (Auto real-time OR manual preview)
-// - Nighttime behavior: Animals curl up & sleep with Zzz bubbles; Lamps/Lanterns glow & cast warm pools of light!
-// - Free-form drag-and-drop placement anywhere on the lawn with automatic perspective depth scaling & Y-sorted z-index
-// - Pikmin-style Seedling Planter (pluck a new companion every 100 verses!)
+// Living 4-Time-of-Day Free-Form Interactive Garden (Style B: Korean Pastel Colored-Pencil Storybook)
+// - Wide-open empty initial canvas with generous space for year-long 100-verse collection (311 total unlocks!)
+// - 4 pixel-aligned lighting scenes (Morning / Noon / Dusk / Night) with Auto real-time or manual preview
+// - 5 animals curl up & sleep with Zzz bubbles at Night; 3 lamps glow with warm pools of light at Dusk & Night
 
 import {
   TIME_PHASES,
   GARDEN_ITEMS,
   getItemDef,
+  getRewardForPluckIndex,
   detectRealTimePhase
 } from './garden-catalog.js';
 import { store } from './state.js';
@@ -16,29 +15,27 @@ import { store } from './state.js';
 let selectedUid = null;
 let trayCategory = 'all'; // 'all' | 'animal' | 'light' | 'plant' | 'structure'
 
-// Perspective scale factor based on vertical Y position (farther back near cottage = smaller, foreground = larger)
+// Perspective scale tuned for the wide-open Style B lawn (allows 20-40+ items cleanly!)
 function computeDepthScale(yPct) {
-  const norm = Math.max(0, Math.min(1, (yPct - 35) / 57));
-  return 0.58 + norm * 0.62; // 0.58x in back -> 1.20x in foreground
+  const norm = Math.max(0, Math.min(1, (yPct - 36) / 58));
+  return 0.56 + norm * 0.56; // 0.56x near back fence -> 1.12x in foreground
 }
 
-// Generate deterministic fireflies / sun-motes positions
 const FIREFLIES = [
-  { x: 14, y: 62, delay: 0.0, dur: 4.2 },
-  { x: 24, y: 54, delay: 1.1, dur: 5.0 },
-  { x: 18, y: 74, delay: 2.3, dur: 4.7 },
-  { x: 38, y: 66, delay: 0.7, dur: 5.5 },
-  { x: 64, y: 58, delay: 1.8, dur: 4.5 },
-  { x: 78, y: 68, delay: 0.4, dur: 5.2 },
-  { x: 86, y: 52, delay: 2.6, dur: 4.8 },
-  { x: 52, y: 79, delay: 1.5, dur: 5.8 },
-  { x: 31, y: 84, delay: 2.0, dur: 4.4 }
+  { x: 14, y: 64, delay: 0.0, dur: 4.2 },
+  { x: 24, y: 58, delay: 1.1, dur: 5.0 },
+  { x: 18, y: 78, delay: 2.3, dur: 4.7 },
+  { x: 42, y: 66, delay: 0.7, dur: 5.5 },
+  { x: 66, y: 56, delay: 1.8, dur: 4.5 },
+  { x: 80, y: 68, delay: 0.4, dur: 5.2 },
+  { x: 88, y: 50, delay: 2.6, dur: 4.8 },
+  { x: 54, y: 82, delay: 1.5, dur: 5.8 }
 ];
 
 const STARS = [
-  { x: 12, y: 8, d: 0.2 }, { x: 26, y: 14, d: 1.1 }, { x: 41, y: 7, d: 0.6 },
-  { x: 55, y: 12, d: 1.7 }, { x: 67, y: 6, d: 0.4 }, { x: 74, y: 18, d: 2.1 },
-  { x: 88, y: 9, d: 0.9 }, { x: 34, y: 20, d: 1.4 }, { x: 61, y: 22, d: 0.3 }
+  { x: 12, y: 6, d: 0.2 }, { x: 28, y: 10, d: 1.1 }, { x: 44, y: 7, d: 0.6 },
+  { x: 58, y: 11, d: 1.7 }, { x: 72, y: 6, d: 0.4 }, { x: 85, y: 10, d: 0.9 },
+  { x: 36, y: 14, d: 1.4 }, { x: 64, y: 15, d: 0.3 }
 ];
 
 export function renderGardenView(container, { showToast }) {
@@ -48,7 +45,6 @@ export function renderGardenView(container, { showToast }) {
   const phase = TIME_PHASES[activePhaseKey];
   const realPhase = TIME_PHASES[detectRealTimePhase()];
 
-  // Ensure selectedUid still exists
   if (selectedUid && !state.gardenItems.some(i => i.uid === selectedUid)) {
     selectedUid = null;
   }
@@ -63,29 +59,34 @@ export function renderGardenView(container, { showToast }) {
     placedCountByItem.set(g.itemId, (placedCountByItem.get(g.itemId) || 0) + 1);
   }
 
+  const nextUnlockPreview = getRewardForPluckIndex(stats.effectivePlucked + 1);
+
   container.innerHTML = `
     <div class="garden-wrap">
-      <!-- Pikmin-Style Seedling Planter Bar -->
+      <!-- 100-Verse Pikmin Seedling Unlock Bar -->
       <section class="card planter-card">
         <div class="planter-top">
           <div class="planter-left">
             <div class="planter-pot ${stats.readyToPluck > 0 ? 'is-ready' : ''}">
-              <span>${stats.readyToPluck > 0 ? '🌷' : '🌱'}</span>
+              <span>${stats.readyToPluck > 0 ? '🎁' : '🌱'}</span>
             </div>
             <div>
               <div class="planter-title">
-                靈糧花盆 · 已陪伴夥伴 <strong>${state.pluckedCount}</strong> 位
+                每讀 100 節獲得 1 件收藏 · 已擁有 <strong>${stats.totalOwnedObjects}</strong> 件
               </div>
               <div class="planter-sub">
                 ${stats.readyToPluck > 0
-                  ? `🎉 有 <strong>${stats.readyToPluck}</strong> 株花苗已經成熟，快把它拔起來加入花園！`
-                  : `每讀滿 100 節長出一株花苗（目前 ${stats.nextSeedlingProgress} / 100 節）`}
+                  ? `🎉 有 <strong>${stats.readyToPluck}</strong> 份新收藏成熟了！下一份將解鎖「<strong>${nextUnlockPreview.name}</strong>」`
+                  : `再讀 ${100 - stats.nextSeedlingProgress} 節即可收成「<strong>${nextUnlockPreview.name}</strong>」（${stats.nextSeedlingProgress}/100 節）`}
               </div>
             </div>
           </div>
-          ${stats.readyToPluck > 0
-            ? `<button class="btn-pluck" data-act="pluck-seedling">🌱 拔起來！(${stats.readyToPluck})</button>`
-            : `<span class="pill-tag pill-mint">還差 ${100 - stats.nextSeedlingProgress} 節</span>`}
+          ${stats.readyToPluck > 0 ? `
+            <div class="pluck-btn-group">
+              <button class="btn-pluck" data-act="pluck-seedling">🌱 拔起收藏 (${stats.readyToPluck})</button>
+              ${stats.readyToPluck > 1 ? `<button class="btn-soft-sm" data-act="pluck-all">一次全收</button>` : ''}
+            </div>
+          ` : `<span class="pill-tag pill-mint">還差 ${100 - stats.nextSeedlingProgress} 節</span>`}
         </div>
         <div class="bar-track bar-thin">
           <div class="bar-fill bar-mint" style="width:${stats.readyToPluck > 0 ? 100 : stats.nextSeedlingProgress}%"></div>
@@ -94,18 +95,18 @@ export function renderGardenView(container, { showToast }) {
 
       <!-- Main Living Garden Card -->
       <section class="card garden-stage-card">
-        <!-- Time-of-Day Lighting Header & Switcher -->
         <div class="garden-header">
           <div>
-            <h3>🏡 我的恩典花園</h3>
+            <h3>🏡 我的粉彩恩典花園</h3>
             <p class="garden-ambient-msg">${phase.emoji} ${phase.greeting}</p>
           </div>
           <div class="garden-quick-btns">
-            <button class="btn-soft-sm" data-act="showcase-layout" title="套用精美示範擺設">✨ 推薦擺設</button>
-            <button class="btn-soft-sm" data-act="clear-garden" title="清空花園物件">🧹 清空</button>
+            <button class="btn-soft-sm" data-act="showcase-layout" title="自動依目前已擁有收藏示範擺放">✨ 參考擺設</button>
+            <button class="btn-soft-sm" data-act="clear-garden" title="收回所有物件，恢復寬敞空地">🧹 全部收回</button>
           </div>
         </div>
 
+        <!-- 4 Time-of-Day Switcher -->
         <div class="time-switcher" role="group" aria-label="花園光影時段切換">
           <button class="time-btn ${state.timeMode === 'auto' ? 'active' : ''}" data-time-mode="auto">
             🕒 自動<small>(${realPhase.label})</small>
@@ -117,13 +118,12 @@ export function renderGardenView(container, { showToast }) {
           `).join('')}
         </div>
 
-        <!-- 4-Time Crossfading Interactive Free-Form Stage -->
+        <!-- Wide-Open 4-Time Crossfading Interactive Stage -->
         <div class="garden-stage phase-${phase.id}" id="garden-stage" data-phase="${phase.id}">
-          <!-- Pixel-aligned 4 Time-of-Day Backdrops -->
-          <img class="garden-bg ${phase.id === 'morning' ? 'active' : ''}" src="assets/garden/garden_morning.jpg" alt="早晨花園" draggable="false">
-          <img class="garden-bg ${phase.id === 'noon' ? 'active' : ''}"    src="assets/garden/garden_noon.jpg"    alt="中午花園" draggable="false">
-          <img class="garden-bg ${phase.id === 'dusk' ? 'active' : ''}"    src="assets/garden/garden_dusk.jpg"    alt="黃昏花園" draggable="false">
-          <img class="garden-bg ${phase.id === 'night' ? 'active' : ''}"   src="assets/garden/garden_night.jpg"   alt="夜晚花園" draggable="false">
+          <img class="garden-bg ${phase.id === 'morning' ? 'active' : ''}" src="assets/garden/garden_morning.jpg" alt="早晨粉彩花園" draggable="false">
+          <img class="garden-bg ${phase.id === 'noon' ? 'active' : ''}"    src="assets/garden/garden_noon.jpg"    alt="中午粉彩花園" draggable="false">
+          <img class="garden-bg ${phase.id === 'dusk' ? 'active' : ''}"    src="assets/garden/garden_dusk.jpg"    alt="黃昏粉彩花園" draggable="false">
+          <img class="garden-bg ${phase.id === 'night' ? 'active' : ''}"   src="assets/garden/garden_night.jpg"   alt="夜晚粉彩花園" draggable="false">
 
           <!-- Atmospheric Light & Weather Layer -->
           <div class="garden-atmosphere" aria-hidden="true">
@@ -140,6 +140,14 @@ export function renderGardenView(container, { showToast }) {
             ` : ''}
           </div>
 
+          <!-- Empty Spacious Lawn Welcome Hint -->
+          ${state.gardenItems.length === 0 ? `
+            <div class="empty-lawn-hint">
+              <span>🌱 寬敞的恩典草地等你佈置！</span>
+              <small>點擊下方收藏庫物件放入草地，可自由拖曳到任何角落</small>
+            </div>
+          ` : ''}
+
           <!-- Free-Form Placed Garden Items Layer -->
           <div class="garden-items-layer" id="garden-items-layer">
             ${state.gardenItems.map(placed => {
@@ -153,9 +161,10 @@ export function renderGardenView(container, { showToast }) {
               const zIdx = Math.round(placed.yPct);
               const isSelected = placed.uid === selectedUid;
 
-              // Light sources stay warmly illuminated at dusk/night instead of being darkened!
               const imgFilter = isLit
-                ? (phase.id === 'night' ? 'brightness(1.15) saturate(1.22) drop-shadow(0 0 12px rgba(255,204,92,0.85))' : 'brightness(1.08) saturate(1.12) drop-shadow(0 0 8px rgba(255,196,86,0.55))')
+                ? (phase.id === 'night'
+                    ? 'brightness(1.16) saturate(1.18) drop-shadow(0 0 12px rgba(255,212,110,0.88))'
+                    : 'brightness(1.08) saturate(1.10) drop-shadow(0 0 7px rgba(255,204,96,0.52))')
                 : phase.itemFilter;
 
               return `
@@ -163,30 +172,25 @@ export function renderGardenView(container, { showToast }) {
                      data-uid="${placed.uid}"
                      style="left:${placed.xPct}%; top:${placed.yPct}%; width:${finalWidthPct.toFixed(2)}%; z-index:${zIdx};">
 
-                  <!-- Dynamic Warm Light Pool on Grass for Lamps at Dusk & Night -->
                   ${isLit ? `
                     <div class="lamp-ground-glow ${phase.id === 'night' ? 'glow-strong' : 'glow-soft'}"></div>
                     <div class="lamp-halo"></div>
                   ` : ''}
 
-                  <!-- Soft Perspective Ground Shadow -->
                   <div class="item-ground-shadow" style="opacity:${phase.shadowOpacity}; transform:translateX(-50%) ${phase.shadowSkew};"></div>
 
-                  <!-- Illustrated Transparent Sprite -->
                   <img class="placed-sprite"
                        src="${spriteSrc}"
                        alt="${def.name}${isSleeping ? '（夜間安歇中）' : ''}"
                        draggable="false"
                        style="filter:${imgFilter}; transform:${placed.flipX ? 'scaleX(-1)' : 'none'};">
 
-                  <!-- Nighttime Sleeping Zzz Bubbles for Resting Animals -->
                   ${isSleeping ? `
                     <div class="sleep-zzz" aria-hidden="true">
                       <span class="z1">z</span><span class="z2">Z</span><span class="z3">z</span>
                     </div>
                   ` : ''}
 
-                  <!-- Selection Controls Popover -->
                   ${isSelected ? `
                     <div class="item-toolbar" data-toolbar="true">
                       <button data-item-act="flip" title="水平翻轉">↔</button>
@@ -200,53 +204,60 @@ export function renderGardenView(container, { showToast }) {
             }).join('')}
           </div>
 
-          <!-- Live Status Pill in Garden Corner -->
           <div class="garden-corner-badge">
             <span>${phase.emoji} ${phase.label}</span>
             <span class="sep">·</span>
-            <span>${phase.animalsSleep ? '💤 動物安歇中' : (phase.lightsOn ? '🏮 燈火已點亮' : '✨ 自由拖曳擺放')}</span>
+            <span>已擺 ${state.gardenItems.length} 件</span>
+            <span class="sep">·</span>
+            <span>${phase.animalsSleep ? '💤 動物安歇' : (phase.lightsOn ? '🏮 燈火亮起' : '✨ 自由拖曳')}</span>
           </div>
         </div>
 
         <div class="garden-tip-bar">
-          💡 <strong>操作小提示：</strong>點選下方收藏放入花園，<strong>按住即可拖曳到草地上任意位置</strong>（越遠越小、越近越大！）。點擊已放置物件可翻轉、縮放或收回。
+          💡 <strong>佈置說明：</strong>初始草地保持空曠，讓您隨一年讀經進度自由設計！每讀滿 <strong>100 節</strong> 就獲得 1 件新收藏（整本聖經共可累積 311 件），點選物件即可放上草地並自由拖曳、縮放與翻轉。
         </div>
       </section>
 
-      <!-- Garden Item Inventory Tray -->
+      <!-- Garden Inventory Tray (22 Style B Items with Live Owned Stock!) -->
       <section class="card tray-card">
         <div class="card-head-row">
           <div>
-            <h3>🎒 花園收藏庫（自由擺放）</h3>
-            <p class="muted-sm">已解鎖 ${stats.unlockedItemIds.size} / ${GARDEN_ITEMS.length} 種聖經主題物件 · 可重複放置多組</p>
+            <h3>🎒 花園收藏庫（22 種粉彩物件）</h3>
+            <p class="muted-sm">已解鎖 ${stats.unlockedItemIds.size} / ${GARDEN_ITEMS.length} 種圖鑑 · 總計擁有 ${stats.totalOwnedObjects} 件（已擺放 ${state.gardenItems.length} 件）</p>
           </div>
         </div>
 
         <div class="filter-pills">
           <button class="filter-pill ${trayCategory === 'all' ? 'active' : ''}" data-tray-cat="all">全部 (${GARDEN_ITEMS.length})</button>
-          <button class="filter-pill ${trayCategory === 'animal' ? 'active' : ''}" data-tray-cat="animal">🐑 動物夥伴</button>
-          <button class="filter-pill ${trayCategory === 'light' ? 'active' : ''}" data-tray-cat="light">🏮 光影明燈</button>
-          <button class="filter-pill ${trayCategory === 'plant' ? 'active' : ''}" data-tray-cat="plant">🌿 花卉樹木</button>
-          <button class="filter-pill ${trayCategory === 'structure' ? 'active' : ''}" data-tray-cat="structure">🏡 聖經建築</button>
+          <button class="filter-pill ${trayCategory === 'animal' ? 'active' : ''}" data-tray-cat="animal">🐑 動物夥伴 (5)</button>
+          <button class="filter-pill ${trayCategory === 'light' ? 'active' : ''}" data-tray-cat="light">🏮 光影燈飾 (3)</button>
+          <button class="filter-pill ${trayCategory === 'plant' ? 'active' : ''}" data-tray-cat="plant">🌷 花木植栽 (6)</button>
+          <button class="filter-pill ${trayCategory === 'structure' ? 'active' : ''}" data-tray-cat="structure">🏡 建築擺飾 (8)</button>
         </div>
 
         <div class="tray-grid">
           ${filteredCatalog.map(item => {
-            const unlocked = stats.unlockedItemIds.has(item.id);
-            const countInGarden = placedCountByItem.get(item.id) || 0;
+            const owned = stats.inventoryStock.get(item.id) || 0;
+            const placed = placedCountByItem.get(item.id) || 0;
+            const remaining = Math.max(0, owned - placed);
+            const unlocked = owned > 0;
+
             return `
-              <button class="tray-item-card ${unlocked ? 'is-unlocked' : 'is-locked'}"
+              <button class="tray-item-card ${unlocked ? (remaining > 0 ? 'is-unlocked' : 'is-all-placed') : 'is-locked'}"
                       data-place-item="${item.id}"
-                      data-unlocked="${unlocked ? '1' : '0'}">
+                      data-owned="${owned}"
+                      data-remaining="${remaining}">
                 <div class="tray-thumb-wrap">
                   <img src="${item.spriteAwake}" alt="${item.name}" loading="lazy">
                   ${!unlocked ? '<span class="lock-overlay">🔒</span>' : ''}
-                  ${countInGarden > 0 ? `<span class="placed-count-pill">已放 ×${countInGarden}</span>` : ''}
+                  ${unlocked ? `<span class="placed-count-pill ${remaining === 0 ? 'depleted' : ''}">剩 ${remaining}/${owned}</span>` : ''}
                   ${item.isLight ? `<span class="feature-dot" title="黃昏與夜晚會發光">💡</span>` : ''}
                   ${item.category === 'animal' ? `<span class="feature-dot" title="夜晚會蜷縮睡覺">🌙</span>` : ''}
                 </div>
                 <div class="tray-item-name">${item.name}</div>
-                <div class="tray-item-sub">${unlocked ? '點選加入花園' : item.unlockText}</div>
+                <div class="tray-item-sub">
+                  ${!unlocked ? item.unlockText : (remaining > 0 ? '點選放上草地' : `已全部擺放（×${placed}）`)}
+                </div>
               </button>
             `;
           }).join('')}
@@ -257,15 +268,23 @@ export function renderGardenView(container, { showToast }) {
 
   // === BIND EVENTS ===
 
-  // 1. Pluck Seedling (Pikmin Bloom style!)
   container.querySelector('[data-act="pluck-seedling"]')?.addEventListener('click', () => {
-    const pal = store.pluckSeedling();
-    if (pal) {
-      showToast(`🎉 拔出來了！歡迎新夥伴「${pal.emoji} ${pal.name}」加入你的讀經旅途！`);
+    const res = store.pluckSeedling();
+    if (res) {
+      const msg = res.isNewSpecies
+        ? `🎉 解鎖全新收藏「${res.name}」！已放入下方收藏庫，快擺上草地吧！`
+        : `🎁 收成「${res.name}」（目前共擁有 ×${res.newQty}）！快去佈置更豐盛的花園吧！`;
+      showToast(msg);
     }
   });
 
-  // 2. Time-of-Day Switcher
+  container.querySelector('[data-act="pluck-all"]')?.addEventListener('click', () => {
+    const n = store.pluckAllSeedlings();
+    if (n > 0) {
+      showToast(`🎉 已一次收成 ${n} 份讀經收藏，全部放入花園收藏庫囉！`);
+    }
+  });
+
   container.querySelectorAll('[data-time-mode]').forEach(btn => {
     btn.addEventListener('click', () => {
       const mode = btn.dataset.timeMode;
@@ -274,30 +293,28 @@ export function renderGardenView(container, { showToast }) {
       if (mode === 'auto') {
         showToast(`🕒 已切換為自動光影（目前時段：${targetPhase.emoji} ${targetPhase.label}）`);
       } else if (mode === 'night') {
-        showToast('🌙 夜幕降臨：小動物們已蜷縮入睡，明燈也點亮了！');
+        showToast('🌙 夜幕降臨：小動物們已蜷縮入睡，所有燈飾自動點亮！');
       } else if (mode === 'dusk') {
-        showToast('🌇 黃昏時刻：小屋窗燈與花園明燈柔和亮起');
+        showToast('🌇 黃昏時刻：粉彩夕陽與暖黃燈火柔和亮起');
       } else {
         showToast(`${targetPhase.emoji} 已切換至「${targetPhase.label}」光影`);
       }
     });
   });
 
-  // 3. Showcase & Clear buttons
   container.querySelector('[data-act="showcase-layout"]')?.addEventListener('click', () => {
     selectedUid = null;
     store.applyShowcaseLayout();
-    showToast('✨ 已為您套用精選花園佈置，仍可自由拖曳微調！');
+    showToast('✨ 已依您目前擁有的收藏套用參考擺設，仍可自由拖曳微調！');
   });
 
   container.querySelector('[data-act="clear-garden"]')?.addEventListener('click', () => {
     if (store.state.gardenItems.length === 0) return;
     selectedUid = null;
     store.clearGarden();
-    showToast('🧹 花園已清空，歡迎重新自由佈置');
+    showToast('🧹 已將所有物件收回收藏庫，草地恢復寬敞空曠！');
   });
 
-  // 4. Tray Category Filter
   container.querySelectorAll('[data-tray-cat]').forEach(btn => {
     btn.addEventListener('click', () => {
       trayCategory = btn.dataset.trayCat;
@@ -305,31 +322,35 @@ export function renderGardenView(container, { showToast }) {
     });
   });
 
-  // 5. Place Item from Tray
   container.querySelectorAll('[data-place-item]').forEach(btn => {
     btn.addEventListener('click', () => {
       const itemId = btn.dataset.placeItem;
-      const unlocked = btn.dataset.unlocked === '1';
+      const owned = Number(btn.dataset.owned);
+      const remaining = Number(btn.dataset.remaining);
       const def = getItemDef(itemId);
-      if (!unlocked) {
-        showToast(`🔒 尚未解鎖「${def.name}」：${def.unlockText}`);
+      if (owned <= 0) {
+        showToast(`🔒 尚未解鎖「${def.name}」：${def.unlockText}（每 100 節拔起花苗即可依序解鎖）`);
         return;
       }
-      // Pick a pleasant non-overlapping spot in the lawn center area
-      const randX = 28 + Math.round(Math.random() * 46);
-      const randY = 54 + Math.round(Math.random() * 28);
+      if (remaining <= 0) {
+        showToast(`📦 您擁有的 ${owned} 件「${def.name}」都已擺在花園裡囉！繼續讀經每 100 節可再累積更多件`);
+        return;
+      }
+      const randX = 30 + Math.round(Math.random() * 52);
+      const randY = 48 + Math.round(Math.random() * 38);
       const placed = store.addGardenItem(itemId, randX, randY);
-      selectedUid = placed.uid;
-      renderGardenView(container, { showToast });
-      showToast(`✨ 已將「${def.name}」放入花園！按住拖曳可移動到任意位置`);
-      document.getElementById('garden-stage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (placed) {
+        selectedUid = placed.uid;
+        renderGardenView(container, { showToast });
+        showToast(`✨ 已將「${def.name}」放上草地！按住可拖曳到任意位置`);
+        document.getElementById('garden-stage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     });
   });
 
-  // 6. Free-Form Pointer Drag & Drop + Selection inside Garden Stage
+  // Free-form Pointer Drag & Drop + Selection inside Garden Stage
   const stageEl = container.querySelector('#garden-stage');
   if (stageEl) {
-    // Clicking empty lawn deselects current item
     stageEl.addEventListener('pointerdown', e => {
       if (!e.target.closest('.placed-item')) {
         if (selectedUid) {
@@ -342,7 +363,6 @@ export function renderGardenView(container, { showToast }) {
     stageEl.querySelectorAll('.placed-item').forEach(itemEl => {
       const uid = itemEl.dataset.uid;
 
-      // Mini toolbar actions (flip / shrink / grow / remove)
       itemEl.querySelectorAll('[data-item-act]').forEach(tbtn => {
         tbtn.addEventListener('pointerdown', e => e.stopPropagation());
         tbtn.addEventListener('click', e => {
@@ -359,12 +379,11 @@ export function renderGardenView(container, { showToast }) {
           } else if (act === 'remove') {
             selectedUid = null;
             store.removeGardenItem(uid);
-            showToast('📦 已收回收藏庫');
+            showToast('📦 已收回收藏庫，隨時可再擺放');
           }
         });
       });
 
-      // Pointer drag handler (smooth 60fps live movement without full re-render until pointerup)
       itemEl.addEventListener('pointerdown', e => {
         if (e.target.closest('[data-toolbar]')) return;
         e.preventDefault();
@@ -393,7 +412,7 @@ export function renderGardenView(container, { showToast }) {
           if (!moved) return;
 
           latestX = Math.max(6, Math.min(94, origXPct + (dx / rect.width) * 100));
-          latestY = Math.max(34, Math.min(92, origYPct + (dy / rect.height) * 100));
+          latestY = Math.max(36, Math.min(94, origYPct + (dy / rect.height) * 100));
 
           const depthScale = computeDepthScale(latestY);
           const widthPct = def.baseWidthPct * depthScale * (current.scaleMult || 1.0);
@@ -418,7 +437,6 @@ export function renderGardenView(container, { showToast }) {
               yPct: Number(latestY.toFixed(2))
             });
           } else {
-            // Simple tap: toggle selection & show biblical verse or nighttime sleep whisper!
             selectedUid = (selectedUid === uid) ? null : uid;
             renderGardenView(container, { showToast });
             if (selectedUid === uid) {

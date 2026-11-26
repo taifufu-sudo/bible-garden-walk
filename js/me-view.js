@@ -89,18 +89,19 @@ export function renderMeView(container, { showToast }) {
       <section class="card catalog-card">
         <div class="card-head-row">
           <div>
-            <h3>📚 夥伴與花園收藏圖鑑</h3>
-            <p class="muted-sm">已拔起 ${state.pluckedCount} 位花苗夥伴 · 已解鎖 ${stats.unlockedItemIds.size}/${GARDEN_ITEMS.length} 件花園插畫物件</p>
+            <h3>📚 花園物件收藏圖鑑（每 100 節 +1 件）</h3>
+            <p class="muted-sm">已解鎖 ${stats.unlockedItemIds.size} / ${GARDEN_ITEMS.length} 種風格 B 粉彩物件 · 累計擁有 ${stats.totalOwnedObjects} 件</p>
           </div>
         </div>
         <div class="catalog-mini-grid">
           ${GARDEN_ITEMS.map(item => {
-            const unlocked = stats.unlockedItemIds.has(item.id);
+            const qty = stats.inventoryStock.get(item.id) || 0;
+            const unlocked = qty > 0;
             return `
               <div class="catalog-mini-item ${unlocked ? '' : 'locked'}">
                 <img src="${item.spriteAwake}" alt="${item.name}">
                 <div class="cat-mini-name">${item.name}</div>
-                <div class="cat-mini-tag">${unlocked ? '已收藏' : '待解鎖'}</div>
+                <div class="cat-mini-tag">${unlocked ? `擁有 ×${qty}` : '待解鎖'}</div>
               </div>
             `;
           }).join('')}
