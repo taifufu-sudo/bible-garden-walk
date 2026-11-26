@@ -1,0 +1,22 @@
+{
+  "name": "恩典花園",
+  "short_name": "恩典花園",
+  "description": "牧區多人線上讀經與小組花園互動",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fff8f0",
+  "theme_color": "#f59e6c",
+  "icons": [
+    {
+      "src": "assets/icon-garden-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-garden-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
