@@ -499,54 +499,51 @@ export const BUILTIN_SCRIPTURE = {
   ]
 };
 
-// Fetch full CUV Traditional Chinese chapter dynamically when online, with seamless fallback
-const chapterCache = new Map();
+// Load complete 66-book 1919 Traditional Chinese CUV directly from local per-book JSON (`data/bible/{bookId}.json`)
+// Caches each book in memory so flipping chapters is instant with zero external API dependencies!
+const bookFileCache = new Map();
 
 export async function fetchChapterVerses(bookId, chapter) {
   const key = `${bookId}:${chapter}`;
+  const chKey = String(chapter);
+
+  // 1. Primary: Local bundled 66-book 1919 CUV JSON (complete OT + NT, 1,189 chapters!)
+  try {
+    let bookData = bookFileCache.get(bookId);
+    if (!bookData) {
+      const res = await fetch(`data/bible/${bookId}.json`);
+      if (res.ok) {
+        bookData = await res.json();
+        bookFileCache.set(bookId, bookData);
+      }
+    }
+    if (bookData && Array.isArray(bookData[chKey]) && bookData[chKey].length > 0) {
+      return {
+        source: 'cuv-local',
+        verses: bookData[chKey].map(([num, text]) => ({ num, text }))
+      };
+    }
+  } catch {
+    // Fall through to inline built-in fallback
+  }
+
+  // 2. Fallback: Inline built-in key chapters
   if (BUILTIN_SCRIPTURE[key]) {
     return {
       source: 'built-in',
       verses: BUILTIN_SCRIPTURE[key].map((text, idx) => ({ num: idx + 1, text }))
     };
   }
-  if (chapterCache.has(key)) return chapterCache.get(key);
 
   const book = getBookById(bookId);
   const expectedCount = book.verses[chapter - 1];
-
-  // Try public bolls.life CUV Traditional Chinese API (CORS-friendly) with quick timeout
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
-    const res = await fetch(`https://bolls.life/get-text/CUV/${bookId}/${chapter}/`, {
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        const cleaned = data.map(v => ({
-          num: v.verse,
-          text: String(v.text || '').replace(/<[^>]+>/g, '').trim()
-        }));
-        const result = { source: 'cuv-online', verses: cleaned };
-        chapterCache.set(key, result);
-        return result;
-      }
-    }
-  } catch {
-    // Offline or blocked — fall back gracefully
-  }
-
-  // Graceful offline reading card with authentic book context & key verse
   return {
     source: 'offline-guide',
     bookKeyVerse: book.keyVerse,
     expectedCount,
     verses: [
       { num: 1, text: `【${book.name} 第 ${chapter} 章｜共 ${expectedCount} 節】` },
-      { num: 2, text: `請翻開您的紙本聖經或聖經 App 閱讀「${book.name} 第 ${chapter} 章」，領受今日靈糧。` },
+      { num: 2, text: `請翻開您的紙本聖經閱讀「${book.name} 第 ${chapter} 章」，領受今日靈糧。` },
       { num: 3, text: `本書卷主題地標：${book.emoji} ${book.place}。` },
       { num: 4, text: `本書卷金句：${book.keyVerse}` },
       { num: 5, text: `讀完本章後，滑動至最下方即可按下「讀完了 ✓」，為您累積 ${expectedCount} 步靈程並澆灌花園花苗！` }
