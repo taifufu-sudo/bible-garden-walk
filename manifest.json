@@ -1,0 +1,22 @@
+{
+  "name": "聖經地圖",
+  "short_name": "聖經地圖",
+  "description": "個人單機版一年整本讀經探險地圖",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6fbf4",
+  "theme_color": "#2d6a4f",
+  "icons": [
+    {
+      "src": "assets/icon-map-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-map-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
